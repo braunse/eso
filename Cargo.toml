@@ -1,0 +1,31 @@
+[package]
+name = "eso"
+version = "0.0.1"
+authors = ["Sebastien Braun <sebastien@sebbraun.de>"]
+repository = "https://github.com/braunse/eso-rs.git"
+homepage = "https://github.com/braunse/eso-rs"
+license = "MPL-2.0"
+readme = "README.md"
+documentation = "https://docs.rs/eso"
+description = "Type machinery to build Cow-like containers"
+edition = "2018"
+autoexamples = false
+
+[[example]]
+name = "simple_newtype"
+crate-type = ["lib"]
+
+[[example]]
+name = "ref_own_newtypes"
+crate-type = ["lib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+
+[dev-dependencies]
+impls = "1.0.3"
+lazy_static = { version = "1.4.0" }
+
+[features]
+default = ["allow-unsafe"]
+allow-unsafe = []
