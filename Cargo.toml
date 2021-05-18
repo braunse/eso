@@ -2,8 +2,8 @@
 name = "eso"
 version = "0.0.1"
 authors = ["Sebastien Braun <sebastien@sebbraun.de>"]
-repository = "https://github.com/braunse/eso-rs.git"
-homepage = "https://github.com/braunse/eso-rs"
+repository = "https://github.com/braunse/eso.git"
+homepage = "https://github.com/braunse/eso"
 license = "MPL-2.0"
 readme = "README.md"
 documentation = "https://docs.rs/eso"
