@@ -4,7 +4,8 @@
 [![docs.rs](https://img.shields.io/docsrs/eso)](https://docs.rs/eso)
 [![GitHub issues](https://img.shields.io/github/issues/braunse/eso)](https://github.com/braunse/eso/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/braunse/eso)](https://github.com/braunse/eso/pulls)
-![GitHub last commit](https://img.shields.io/github/last-commit/braunse/eso)
+[![GitHub last commit](https://img.shields.io/github/last-commit/braunse/eso)](https://github.com/braunse/eso/commits)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/braunse/eso/ci-build)
 ![Crates.io](https://img.shields.io/crates/l/eso)
 
 This library provids the `Eso` struct, a versatile building block for making
