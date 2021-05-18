@@ -20,7 +20,7 @@ use std::{
     sync::Arc,
 };
 
-/// A value that can be borrowed as *generalized* reference.
+/// A value that can be borrowed as a generalized reference of type `T`.
 ///
 /// The difference to [`Borrow`](std::borrow::Borrow) is that
 /// this trait allows you to return types that are not actually references,
@@ -132,7 +132,7 @@ impl<'a> Borrowable<'a, &'a CStr> for CString {
 ///         // subtyping works once the compiler statically knows
 ///         // these are references:
 ///         self
-///     }   
+///     }
 /// }
 /// ```
 pub trait Reborrowable<'a, T: 'a> {

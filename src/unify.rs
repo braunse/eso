@@ -4,7 +4,22 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#![allow(missing_docs)]
+//! Type-level machinery to allow [`Eso::unify`] and [`Eso::select`]
+//! to work.
+//!
+//! The [`Unify`] trait specifies the rules how two [`Maybe`]
+//! types can be merged:
+//!
+//! | This ...    | ... unifies with ... | ... containing ... | ... producing ... |
+//! |-------------|----------------------|--------------------|-------------------|
+//! | [`An<A>`]   | [`An<A>`]            | same inner type    | [`An<A>`]         |
+//! | [`No<A>`]   | [`An<B>`]            | any type           | [`An<B>`]         |
+//! | [`An<A>`]   | [`No<B>`]            | any type           | [`An<A>`]         |
+//! | [`No<A>`]   | [`No<B>`]            | any type           | [`No<A>`]         |
+//!
+//! This module also provides the utility trait [`Unify3`] that
+//! contains the ugly type manipulations to apply the [`Unify`] rules
+//! between three types.
 
 use crate::eso::Eso;
 use crate::maybe::{An, Impossible, No};
@@ -89,9 +104,13 @@ use crate::maybe::{An, Impossible, No};
 /// ```
 ///
 pub trait Unify<B> {
+    /// The result of unifying `Self` and `B`
     type Out;
 
+    /// Make an `Out` value, given a value of type `Self`
     fn inject_a(self) -> Self::Out;
+
+    /// Make an `Out` value, given a value of type `B`
     fn inject_b(b: B) -> Self::Out;
 }
 
@@ -160,11 +179,19 @@ where
     }
 }
 
+/// Shorthand for unifying three types by applying [`Unify`]
+/// twice.
 pub trait Unify3<B, C> {
+    /// The resulting type when unifying `Self`, `B`, and `C`
     type Out3;
 
+    /// Make an `Out3` value, given a value of type `Self`
     fn inject3_a(self) -> Self::Out3;
+
+    /// Make an `Out3` value, given a value of type `B`
     fn inject3_b(b: B) -> Self::Out3;
+
+    /// Make an `Out3` value, given a value of type `C`
     fn inject3_c(c: C) -> Self::Out3;
 }
 
