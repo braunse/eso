@@ -29,6 +29,27 @@
 //! of reference. The definitions in the [`borrow`] module describe
 //! the different operations that are required to use generalized
 //! references.
+//!
+//! ## Feature flags
+//!
+//! ### `allow-unsafe`: Allow usage of `unsafe` Rust
+//!
+//! This feature is active by default.
+//!
+//! `Eso` contains two usages of `unsafe`, which make the [`No`](crate::maybe::No)
+//! type implement [`Send`] and [`Sync`] irrespective of its type
+//! parameter.
+//! This should be safe since no value of the [`No`] type can ever exist
+//! and it therefore cannot participate in any races or memory safety violations.
+//!
+//! Nonetheless, if you want to disallow usage of `unsafe`,
+//! turn off the default features in your `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies.eso]
+//! version = "0.0.1"
+//! default-features = false
+//! ```
 
 #![deny(
     missing_docs,
