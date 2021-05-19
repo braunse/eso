@@ -87,13 +87,6 @@ pub trait MaybeMap<NewInner>: Maybe {
         F: FnOnce(Self::Inner) -> NewInner;
 }
 
-// pub trait MaybeMerge<Other: Maybe<Inner = Self::Inner>>: Maybe {
-//     type Out: Maybe<Inner = Self::Inner>;
-
-//     fn inject_self(self) -> Self::Out;
-//     fn inject_other(other: Other) -> Self::Out;
-// }
-
 /// A trait characterizing a never-existing value
 pub trait Impossible {
     /// Conjure up anything from the nonexistant value.

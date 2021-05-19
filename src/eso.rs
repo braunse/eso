@@ -908,9 +908,6 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
         }
     }
 
-    // pub fn unsplit<CE, CS, CO>(self) -> Eso<CE, CS, CO>
-    // where ME: Maybe<Inner:
-
     /// Transform `self´ by applying a function to the `E`
     /// variant while preserving the other variants.
     ///
