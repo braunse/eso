@@ -14,6 +14,7 @@
 //! for details.
 
 use std::{
+    borrow::{Borrow, Cow},
     ffi::{CStr, CString, OsStr, OsString},
     path::{Path, PathBuf},
     rc::Rc,
@@ -22,12 +23,21 @@ use std::{
 
 /// A value that can be borrowed as a generalized reference of type `T`.
 ///
+/// ```
+/// # use eso::borrow::Borrowable;
+/// let value = String::from("Hello World");
+/// let reference: &str = value.borrow();
+/// ```
+///
 /// The difference to [`Borrow`](std::borrow::Borrow) is that
 /// this trait allows you to return types that are not actually references,
-/// such as [`Eso`](crate::eso::Eso)s.
+/// such as [`Cow`]s:
 ///
-/// For this reason, the trait is generic in the type of reference that the
-/// caller wishes to borrow.
+/// ```
+/// # use eso::borrow::Borrowable; use std::borrow::Cow;
+/// let value = String::from("Hello World");
+/// let reference: Cow<str> = value.borrow();
+/// ```
 pub trait Borrowable<'a, T: 'a> {
     /// Borrow a generalized reference of type `T`.
     fn borrow(&'a self) -> T;
@@ -57,6 +67,16 @@ impl<'a, T: ?Sized> Borrowable<'a, &'a T> for Rc<T> {
 impl<'a, T> Borrowable<'a, &'a T> for T {
     fn borrow(&'a self) -> &'a T {
         self
+    }
+}
+
+impl<'a, T, R> Borrowable<'a, Cow<'a, R>> for T
+where
+    T: Borrow<R>,
+    R: ?Sized + ToOwned<Owned = T>,
+{
+    fn borrow(&'a self) -> Cow<R> {
+        Cow::Borrowed(self.borrow())
     }
 }
 
