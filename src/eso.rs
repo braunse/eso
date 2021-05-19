@@ -118,7 +118,7 @@ impl<ME, MS, O> Eso<ME, MS, An<O>> {
     /// assert!(my_str.is_owning());
     /// assert_eq!(my_str.get_ref(), "Hello World!");
     /// ```
-    pub fn to_mut<'r>(&'r mut self) -> &'r mut O
+    pub fn to_mut(&mut self) -> &mut O
     where
         ME: MOwnableRef<O> + Clone,
         MS: MOwnableRef<O> + Clone,
@@ -153,11 +153,11 @@ impl<ME, MS, O> Eso<ME, MS, An<O>> {
     /// assert!(my_str.is_owning());
     /// assert_eq!(my_str.get_ref(), "Hello World!");
     /// ```
-    pub fn mutate<'r, F, T>(&'r mut self, f: F) -> T
+    pub fn mutate<F, T>(&mut self, f: F) -> T
     where
         ME: MOwnableRef<O> + Clone,
         MS: MOwnableRef<O> + Clone,
-        for<'f> F: FnOnce(&'f mut O) -> T,
+        F: FnOnce(&mut O) -> T,
     {
         match self {
             Eso::E(e) => *self = Eso::O(An(e.to_owned())),
@@ -220,10 +220,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// my_function("Hello World");
     /// ```
     pub fn is_ephemeral(&self) -> bool {
-        match self {
-            Eso::E(_) => true,
-            _ => false,
-        }
+        matches!(self, Eso::E(_))
     }
 
     /// Returns `true` if the [`Eso`] is of the [`Eso::S`] variant.
@@ -242,10 +239,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// my_function("Hello World");
     /// ```
     pub fn is_static(&self) -> bool {
-        match self {
-            Eso::S(_) => true,
-            _ => false,
-        }
+        matches!(self, Eso::S(_))
     }
 
     /// Returns `true` if the [`Eso`] is of the [`Eso::O`] variant.
@@ -264,10 +258,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// my_function("Hello World");
     /// ```
     pub fn is_owning(&self) -> bool {
-        match self {
-            Eso::O(_) => true,
-            _ => false,
-        }
+        matches!(self, Eso::O(_))
     }
 
     /// Returns `true` if the [`Eso`] does not own the contained value,
@@ -287,10 +278,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// my_function("Hello World");
     /// ```
     pub fn is_reference(&self) -> bool {
-        match self {
-            Eso::O(_) => false,
-            _ => true,
-        }
+        !matches!(self, Eso::O(_))
     }
 
     /// Returns `true` if the [`Eso`] is lasting, i. e. it is not
@@ -310,10 +298,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// my_function("Hello World");
     /// ```
     pub fn is_lasting(&self) -> bool {
-        match self {
-            Eso::E(_) => false,
-            _ => true,
-        }
+        !matches!(self, Eso::E(_))
     }
 
     /// Transform this [`Eso`] into one that can only be a static/shared
@@ -402,7 +387,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     ///
     /// See [`Eso::into_static`] for considerations regarding the
     /// lifetime of the result.
-    pub fn to_static<'a>(&'a self) -> x::sO<ME, MS, MO>
+    pub fn to_static(&self) -> x::sO<ME, MS, MO>
     where
         ME: MOwnableRef<MO::Inner> + Clone,
         MS: Maybe + Clone,
@@ -455,7 +440,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// assert!(my_str.is_ephemeral()); // <-- my_str is still alive
     /// assert!(my_owned.is_owning());
     /// ```
-    pub fn to_owning<'a>(&'a self) -> x::O<ME, MS, MO>
+    pub fn to_owning(&self) -> x::O<ME, MS, MO>
     where
         ME: MOwnableRef<MO::Inner> + Clone,
         MS: MOwnableRef<MO::Inner> + Clone,
