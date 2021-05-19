@@ -142,6 +142,9 @@ impl<ME, MS, O> Eso<ME, MS, An<O>> {
         }
     }
 
+    /// Mutate the owned value. If no owned value is contained,
+    /// the referenced value will be cloned into an owned form.
+    ///
     /// ```
     /// # use ::eso::shorthand::t;
     /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
@@ -174,6 +177,19 @@ impl<E, MS, O> Eso<An<E>, MS, An<O>> {
     /// This will either convert the reference from a [`Cow::Borrowed`]
     /// into the correct generalized reference type via [`Reborrowable`]
     /// or take ownership of the owned value from a [`Cow::Owned`].
+    ///
+    /// ```
+    /// # use eso::shorthand::t; use std::borrow::Cow;
+    /// type Str<'a> = t::EO<&'a str, &'static str, String>;
+    ///
+    /// let owned_eso = Str::from_cow(Cow::Owned("Hello World".to_string()));
+    /// assert!(owned_eso.is_owning());
+    /// assert_eq!(owned_eso.get_ref(), "Hello World");
+    ///
+    /// let borrowed_eso = Str::from_cow(Cow::Borrowed("Hello World"));
+    /// assert!(borrowed_eso.is_reference());
+    /// assert_eq!(borrowed_eso.get_ref(), "Hello World");
+    /// ```
     pub fn from_cow<'a, T: ToOwned + ?Sized>(cow: Cow<'a, T>) -> Self
     where
         E: 'a,
@@ -189,6 +205,20 @@ impl<E, MS, O> Eso<An<E>, MS, An<O>> {
 
 impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// Returns `true` if the [`Eso`] is of the [`Eso::E`] variant.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// fn my_function(a_borrowed_str: &str) {
+    ///     let ephemeral = Str::from_ref(a_borrowed_str);
+    ///     let shared = Str::from_static("Hello World");
+    ///     let owned = Str::from_owned("Hello World".to_string());
+    ///     assert!(ephemeral.is_ephemeral());
+    ///     assert!(!shared.is_ephemeral());
+    ///     assert!(!owned.is_ephemeral());
+    /// }
+    /// my_function("Hello World");
+    /// ```
     pub fn is_ephemeral(&self) -> bool {
         match self {
             Eso::E(_) => true,
@@ -197,6 +227,20 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     }
 
     /// Returns `true` if the [`Eso`] is of the [`Eso::S`] variant.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// fn my_function(a_borrowed_str: &str) {
+    ///     let ephemeral = Str::from_ref(a_borrowed_str);
+    ///     let shared = Str::from_static("Hello World");
+    ///     let owned = Str::from_owned("Hello World".to_string());
+    ///     assert!(!ephemeral.is_static());
+    ///     assert!(shared.is_static());
+    ///     assert!(!owned.is_static());
+    /// }
+    /// my_function("Hello World");
+    /// ```
     pub fn is_static(&self) -> bool {
         match self {
             Eso::S(_) => true,
@@ -205,6 +249,20 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     }
 
     /// Returns `true` if the [`Eso`] is of the [`Eso::O`] variant.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// fn my_function(a_borrowed_str: &str) {
+    ///     let ephemeral = Str::from_ref(a_borrowed_str);
+    ///     let shared = Str::from_static("Hello World");
+    ///     let owned = Str::from_owned("Hello World".to_string());
+    ///     assert!(!ephemeral.is_owning());
+    ///     assert!(!shared.is_owning());
+    ///     assert!(owned.is_owning());
+    /// }
+    /// my_function("Hello World");
+    /// ```
     pub fn is_owning(&self) -> bool {
         match self {
             Eso::O(_) => true,
@@ -214,6 +272,20 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Returns `true` if the [`Eso`] does not own the contained value,
     /// i. e. it is of the [`Eso::E`] or [`Eso::S`] variants.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// fn my_function(a_borrowed_str: &str) {
+    ///     let ephemeral = Str::from_ref(a_borrowed_str);
+    ///     let shared = Str::from_static("Hello World");
+    ///     let owned = Str::from_owned("Hello World".to_string());
+    ///     assert!(ephemeral.is_reference());
+    ///     assert!(shared.is_reference());
+    ///     assert!(!owned.is_reference());
+    /// }
+    /// my_function("Hello World");
+    /// ```
     pub fn is_reference(&self) -> bool {
         match self {
             Eso::O(_) => false,
@@ -223,6 +295,20 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Returns `true` if the [`Eso`] is lasting, i. e. it is not
     /// an ephemeral reference.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// fn my_function(a_borrowed_str: &str) {
+    ///     let ephemeral = Str::from_ref(a_borrowed_str);
+    ///     let shared = Str::from_static("Hello World");
+    ///     let owned = Str::from_owned("Hello World".to_string());
+    ///     assert!(!ephemeral.is_lasting());
+    ///     assert!(shared.is_lasting());
+    ///     assert!(owned.is_lasting());
+    /// }
+    /// my_function("Hello World");
+    /// ```
     pub fn is_lasting(&self) -> bool {
         match self {
             Eso::E(_) => false,
@@ -238,10 +324,47 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// but will move a shared/static reference or an owned value into the
     /// result unchanged.
     ///
-    /// If there is a non-static lifetime mentioned in the static type of
-    /// `E`, this can then be dropped via [`Eso::relax`] to reflect the
-    /// *'lifetime-less-ness'* of the result.
-    pub fn into_static<'s>(self) -> x::sO<ME, MS, MO>
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// type StaticStr<'a> = t::SO<&'a str, &'static str, String>;
+    /// let my_reference = Str::from_ref("Hello World");
+    /// assert!(my_reference.is_ephemeral());
+    /// let my_static: StaticStr = my_reference.into_static();
+    /// assert!(my_static.is_lasting());
+    /// ```
+    ///
+    /// The conversion will not remove the lifetimes from the type of the
+    /// reference:
+    ///
+    /// ```compile_fail
+    /// # use eso::shorthand::t;
+    /// # fn function_consuming_static<T: 'static>(_: T) {}
+    /// # type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// fn my_fn(borrowed: &str) {
+    ///     let my_reference = Str::from_ref(borrowed);
+    ///     let my_static = my_reference.into_static();
+    ///     function_consuming_static(my_static);
+    /// }
+    /// my_fn("Hello World");
+    /// ```
+    ///
+    /// However, given that there is a type-level proof that the return value
+    /// of this function cannot be of the `E` variant, the [`relax`](Eso::relax)
+    /// function can be used to drop the `'a` lifetime:
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// # fn function_consuming_static<T: 'static>(_: T) {}
+    /// # type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// fn my_fn(borrowed: &str) {
+    ///     let my_reference = Str::from_ref(borrowed);
+    ///     let my_static: Str<'static> = my_reference.into_static().relax();
+    ///     function_consuming_static(my_static);
+    /// }
+    /// my_fn("Hello World");
+    /// ```
+    pub fn into_static(self) -> x::sO<ME, MS, MO>
     where
         ME: MOwnableRef<MO::Inner>,
         MO: Maybe,
@@ -256,14 +379,29 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// Clone this [`Eso`] into one that can only be a static/shared
     /// reference or an owned value.
     ///
-    /// This clones an ephemeral reference into an owned value via
-    /// [`Ownable`](crate::borrow::Ownable)
+    /// ```
+    /// # use eso::shorthand::t;
+    /// # fn function_consuming_static<T: 'static>(_: T) {}
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// fn my_fn(borrowed: &str) -> Str {
+    ///     let my_reference = Str::from_ref(borrowed);
+    ///     let my_static: Str<'static> = my_reference.to_static().relax();
+    ///     function_consuming_static(my_static);
+    ///     my_reference
+    /// }
+    /// assert_eq!(my_fn("Hello World").get_ref(), "Hello World");
+    /// ```
+    ///
+    /// The `to_static` method clones an ephemeral reference into an owned value via
+    /// [`Ownable::to_owned`](crate::borrow::Ownable::to_owned)
     /// but clones a shared/static reference or an owned value into the
     /// result unchanged.
+    /// This may be preferable to calling [`clone`](Clone::clone) and
+    /// [`to_static`](Eso::to_static) in case one of the contained
+    /// types has an optimized implementation of [`Ownable::to_owned`].
     ///
-    /// If there is a non-static lifetime mentioned in the static type of
-    /// `E`, this can then be dropped via [`Eso::relax`] to reflect the
-    /// *'lifetime-less-ness'* of the result.
+    /// See [`Eso::into_static`] for considerations regarding the
+    /// lifetime of the result.
     pub fn to_static<'a>(&'a self) -> x::sO<ME, MS, MO>
     where
         ME: MOwnableRef<MO::Inner> + Clone,
@@ -282,7 +420,15 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// Any reference will be cloned into an owned form via
     /// [`Ownable`](crate::borrow::Ownable),
     /// and an owned value will be moved into the result unchanged.
-    pub fn into_owning<'s>(self) -> x::O<ME, MS, MO>
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_str = Str::from_ref("Hello World");
+    /// let my_owned = my_str.into_owning();
+    /// assert!(my_owned.is_owning());
+    /// ```
+    pub fn into_owning(self) -> x::O<ME, MS, MO>
     where
         ME: MOwnableRef<MO::Inner>,
         MS: MOwnableRef<MO::Inner>,
@@ -300,6 +446,15 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// Any reference will be cloned into an owned form via
     /// [`Ownable`](crate::borrow::Ownable),
     /// and an owned value will be cloned into the result via [`Clone`].
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_str = Str::from_ref("Hello World");
+    /// let my_owned = my_str.to_owning();
+    /// assert!(my_str.is_ephemeral()); // <-- my_str is still alive
+    /// assert!(my_owned.is_owning());
+    /// ```
     pub fn to_owning<'a>(&'a self) -> x::O<ME, MS, MO>
     where
         ME: MOwnableRef<MO::Inner> + Clone,
@@ -314,6 +469,14 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     }
 
     /// Borrow a generalized reference of type `T` from this [`Eso`].
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let ephemeral = Str::from_ref("Hello World");
+    /// let owning = Str::from_owned("Hello World".to_string());
+    /// assert_eq!(ephemeral.get_ref(), owning.get_ref());
+    /// ```
     pub fn get_ref<'a, T: 'a>(&'a self) -> T
     where
         ME: Clone + MReborrowable<'a, T>,
@@ -328,7 +491,29 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     }
 
     /// Mutably borrow the owned value contained in this [`Eso`],
-    /// if it actually contains an owned value.
+    /// if it actually contains an owned value:
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Int<'a> = t::ESO<&'a i32, &'static i32, i32>;
+    /// let mut my_int = Int::from_owned(40);
+    /// if let Some(mut_ref) = my_int.try_get_mut() {
+    ///     *mut_ref += 2;
+    /// }
+    /// assert_eq!(my_int.get_ref(), &42);
+    /// ```
+    ///
+    /// Return `None` if `self` contains a reference:
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Int<'a> = t::ESO<&'a i32, &'static i32, i32>;
+    /// let mut my_int = Int::from_ref(&42);
+    /// assert!(matches!(my_int.try_get_mut(), None));
+    /// ```
+    ///
+    /// If clone-on-write behavior is desired, use the
+    /// [`get_mut`](Eso::get_mut) method instead.
     pub fn try_get_mut(&mut self) -> Option<&mut MO::Inner>
     where
         MO: Maybe,
@@ -342,7 +527,29 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Match on the ephemeral case, and modify the type parameters to prove
     /// the match, if successful.
-    /// Otherwise, casts the type parameters to prove the non-match.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_ref("Hello World");
+    /// let ephemeral = my_ref.try_split_ephemeral().unwrap();
+    /// //  ^^^^^^^^^---- carries type-level prrof that it can only be an Eso::E!
+    /// let the_ref = ephemeral.safe_unwrap_ephemeral();
+    /// assert_eq!(the_ref, "Hello World");
+    /// ```
+    ///
+    /// Otherwise, casts the type parameters to prove the non-match:
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::EO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_owned("Hello World".to_string());
+    /// let owned = my_ref.try_split_ephemeral().unwrap_err();
+    /// //  ^^^^^---- carries type-level prrof that it can not be an Eso::E.
+    /// //            Since we used the t::EO alias, that only leaves Eso::O.
+    /// let the_string: String = owned.safe_unwrap_owned();
+    /// assert_eq!(&the_string, "Hello World");
+    /// ```
     pub fn try_split_ephemeral(self) -> Result<x::E<ME, MS, MO>, x::so<ME, MS, MO>>
     where
         ME: Maybe,
@@ -358,7 +565,29 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Match on the static/shared case, and modify the type parameters to prove
     /// the match, if successful.
-    /// Otherwise, casts the type parameters to prove the non-match.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_static("Hello World");
+    /// let shared = my_ref.try_split_static().unwrap();
+    /// //  ^^^^^^^^^---- carries type-level prrof that it can only be an Eso::E!
+    /// let the_ref = shared.safe_unwrap_static();
+    /// assert_eq!(the_ref, "Hello World");
+    /// ```
+    ///
+    /// Otherwise, casts the type parameters to prove the non-match:
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::SO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_owned("Hello World".to_string());
+    /// let owned = my_ref.try_split_static().unwrap_err();
+    /// //  ^^^^^---- carries type-level prrof that it can not be an Eso::E.
+    /// //            Since we used the t::EO alias, that only leaves Eso::O.
+    /// let the_string: String = owned.safe_unwrap_owned();
+    /// assert_eq!(&the_string, "Hello World");
+    /// ```
     pub fn try_split_static(self) -> Result<x::S<ME, MS, MO>, x::eo<ME, MS, MO>>
     where
         ME: Maybe,
@@ -374,7 +603,29 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Match on the owned case, and modify the type parameters to prove
     /// the match, if successful.
-    /// Otherwise, casts the type parameters to prove the non-match.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_owned("Hello World".to_string());
+    /// let owned = my_ref.try_split_owned().unwrap();
+    /// //  ^^^^^---- carries type-level prrof that it can only be an Eso::E!
+    /// let the_string = owned.safe_unwrap_owned();
+    /// assert_eq!(&the_string, "Hello World");
+    /// ```
+    ///
+    /// Otherwise, casts the type parameters to prove the non-match:
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::SO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_static("Hello World");
+    /// let shared = my_ref.try_split_owned().unwrap_err();
+    /// //  ^^^^^^---- carries type-level prrof that it can not be an Eso::E.
+    /// //             Since we used the t::EO alias, that only leaves Eso::O.
+    /// let the_str = shared.safe_unwrap_static();
+    /// assert_eq!(the_str, "Hello World");
+    /// ```
     pub fn try_split_owned(self) -> Result<x::O<ME, MS, MO>, x::es<ME, MS, MO>>
     where
         ME: Maybe,
@@ -388,8 +639,30 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
         }
     }
 
-    /// Retrieve the contained ephemeral value.
-    /// If the value is not ephemeral, cast the type parameters to prove the non-match.
+    /// Retrieve the contained ephemeral reference, if `self` is [`Eso::E`].
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_ref("Hello World");
+    /// assert_eq!(
+    ///     my_ref.try_unwrap_ephemeral().unwrap(),
+    ///     "Hello World"
+    /// );
+    /// ```
+    ///
+    /// Otherwise, casts the type parameters to prove the non-match:
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::EO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_owned("Hello World".to_string());
+    /// let owned = my_ref.try_unwrap_ephemeral().unwrap_err();
+    /// //  ^^^^^---- carries type-level prrof that it can not be an Eso::E.
+    /// //            Since we used the t::EO alias, that only leaves Eso::O.
+    /// let the_string: String = owned.safe_unwrap_owned();
+    /// assert_eq!(&the_string, "Hello World");
+    /// ```
     pub fn try_unwrap_ephemeral(self) -> Result<ME::Inner, x::so<ME, MS, MO>>
     where
         ME: Maybe,
@@ -402,7 +675,29 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     }
 
     /// Retrieve the contained owned value.
-    /// If the value is not owned, cast the type parameters to prove the non-match.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_owned("Hello World".to_string());
+    /// assert_eq!(
+    ///     my_ref.try_unwrap_owned().unwrap(),
+    ///     "Hello World".to_string()
+    /// );
+    /// ```
+    ///
+    /// Otherwise, casts the type parameters to prove the non-match:
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::EO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_ref("Hello World");
+    /// let ephemeral = my_ref.try_unwrap_owned().unwrap_err();
+    /// //  ^^^^^^^^^---- carries type-level prrof that it can not be an Eso::E.
+    /// //                Since we used the t::EO alias, that only leaves Eso::O.
+    /// let the_str = ephemeral.safe_unwrap_ephemeral();
+    /// assert_eq!(the_str, "Hello World");
+    /// ```
     pub fn try_unwrap_owned(self) -> Result<MO::Inner, x::es<ME, MS, MO>>
     where
         MO: Maybe,
@@ -415,7 +710,29 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     }
 
     /// Retrieve the contained static/shared value.
-    /// If the value is not static/shared, cast the type parameters to prove the non-match.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_static("Hello World");
+    /// assert_eq!(
+    ///     my_ref.try_unwrap_static().unwrap(),
+    ///     "Hello World"
+    /// );
+    /// ```
+    ///
+    /// Otherwise, casts the type parameters to prove the non-match:
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::SO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_owned("Hello World".to_string());
+    /// let owned = my_ref.try_unwrap_static().unwrap_err();
+    /// //  ^^^^^---- carries type-level prrof that it can not be an Eso::E.
+    /// //            Since we used the t::SO alias, that only leaves Eso::O.
+    /// let the_string = owned.safe_unwrap_owned();
+    /// assert_eq!(&the_string, "Hello World");
+    /// ```
     pub fn try_unwrap_static(self) -> Result<MS::Inner, x::eo<ME, MS, MO>>
     where
         MS: Maybe,
@@ -429,6 +746,15 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Borrow an ephemeral reference or preserve a static/shared reference.
     /// If the [`Eso`] contains an owned value, borrow a reference to it.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_shared = Str::from_static("Hello World");
+    /// let my_owned = Str::from_owned("Hello World".to_string());
+    /// assert!(my_shared.reference().is_static());
+    /// assert!(my_owned.reference().is_ephemeral());
+    /// ```
     pub fn reference<'a>(&'a self) -> x::ES<ME, MS, MO>
     where
         ME: Maybe + Clone,
@@ -448,6 +774,15 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// [reborrows](Reborrowable) a shared/static reference or
     /// [borrows](crate::borrow::Borrowable) a generalized reference to
     /// an owned value.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_shared = Str::from_static("Hello World");
+    /// let my_owned = Str::from_owned("Hello World".to_string());
+    /// assert!(my_shared.ephemeral().is_ephemeral());
+    /// assert!(my_owned.ephemeral().is_ephemeral());
+    /// ```
     pub fn ephemeral<'a>(&'a self) -> x::E<ME, MS, MO>
     where
         ME: Maybe + Clone,
@@ -465,6 +800,15 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     ///
     /// [Reborrows](Reborrowable) an ephemeral or static/shared reference,
     /// preserves an owned value.
+    ///
+    /// ```
+    /// # use eso::shorthand::t; use std::borrow::Cow;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_ref("Hello World");
+    /// let my_owned = Str::from_owned("Hello World".to_string());
+    /// assert!(matches!(my_ref.into_cow(), Cow::Borrowed("Hello World")));
+    /// assert!(matches!(my_owned.into_cow(), Cow::Owned(_)));
+    /// ```
     pub fn into_cow<'a, T: ?Sized + ToOwned + 'a>(self) -> Cow<'a, T>
     where
         ME: MReborrowable<'a, &'a T>,
@@ -482,6 +826,39 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// of type parameters.
     ///
     /// See [`Relax`] for the rules about relaxation.
+    ///
+    /// An [`Eso`] always carries all three of its type parameters
+    /// in its type signature. Sometimes this leads to errors:
+    ///
+    /// ```compile_fail
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::SO<&'a str, &'static str, String>;
+    /// # fn function_that_expects_a_static(s: Str<'static>) {}
+    /// fn tie_to_lifetime<'a>(lifetime_of: &'a i32) -> Str<'a> {
+    ///     Str::from_static("Hello World")
+    /// }
+    /// let i = 42;
+    /// let my_str = tie_to_lifetime(&i); // <-- tied to i's lifetime
+    /// function_that_expects_a_static(my_str); // <-- ERROR
+    /// ```
+    ///
+    /// Since the [`t::SO`] alias contains type-level proof that
+    /// the [`E`](Eso::E) case is not possible, the first type
+    /// parameter can be safely changed from `&'a str` to
+    /// `&'static str`:
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// # type Str<'a> = t::SO<&'a str, &'static str, String>;
+    /// # fn function_that_expects_a_static(s: Str<'static>) {}
+    /// # fn tie_to_lifetime<'a>(lifetime_of: &'a i32) -> Str<'a> {
+    /// #     Str::from_static("Hello World")
+    /// # }
+    /// let i = 42;
+    /// let my_str = tie_to_lifetime(&i); // <-- tied to i's lifetime
+    /// let my_str: Str<'static> = my_str.relax(); // <-- known to be static
+    /// function_that_expects_a_static(my_str); // No Error
+    /// ```
     pub fn relax<ME1, MS1, MO1>(self) -> Eso<ME1, MS1, MO1>
     where
         ME: Relax<ME1>,
@@ -496,9 +873,8 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     }
 
     /// Clone the [`Eso`] with relaxed type parameters, to fit
-    /// an expected configuration.
-    ///
-    /// See [`Relax`] for the rules about relaxation.
+    /// an expected configuration. See [`Eso::relax`] for
+    /// more information.
     pub fn clone_relax<ME1, MS1, MO1>(&self) -> Eso<ME1, MS1, MO1>
     where
         ME: Clone + Relax<ME1>,
@@ -537,6 +913,18 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Transform `self´ by applying a function to the `E`
     /// variant while preserving the other variants.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_ref("Hello World");
+    /// let mapped = my_ref.map_e(|_| "Ha!");
+    /// assert_eq!(mapped.get_ref(), "Ha!");
+    ///
+    /// let my_static = Str::from_static("Hello World");
+    /// let mapped = my_static.map_e(|_| "Ha!");
+    /// assert_eq!(mapped.get_ref(), "Hello World");
+    /// ```
     pub fn map_e<F, T>(self, f: F) -> Eso<ME::Out, MS, MO>
     where
         ME: MaybeMap<T>,
@@ -551,6 +939,18 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Transform `self´ by applying a function to the `E`
     /// variant while preserving the other variants.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_static = Str::from_static("Hello World");
+    /// let mapped = my_static.map_s(|_| "Ha!");
+    /// assert_eq!(mapped.get_ref(), "Ha!");
+    ///
+    /// let my_ref = Str::from_ref("Hello World");
+    /// let mapped = my_ref.map_s(|_| "Ha!");
+    /// assert_eq!(mapped.get_ref(), "Hello World");
+    /// ```
     pub fn map_s<F, T>(self, f: F) -> Eso<ME, MS::Out, MO>
     where
         MS: MaybeMap<T>,
@@ -565,6 +965,18 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Transform `self´ by applying a function to the `E`
     /// variant while preserving the other variants.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_ref = Str::from_owned("Hello World".to_string());
+    /// let mapped = my_ref.map_o(|e| e.to_uppercase());
+    /// assert_eq!(mapped.get_ref(), "HELLO WORLD");
+    ///
+    /// let my_static = Str::from_static("Hello World");
+    /// let mapped = my_static.map_o(|e| e.to_uppercase());
+    /// assert_eq!(mapped.get_ref(), "Hello World");
+    /// ```
     pub fn map_o<F, T>(self, f: F) -> Eso<ME, MS, MO::Out>
     where
         MO: MaybeMap<T>,
@@ -579,6 +991,22 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Transform `self´ by applying a different function to
     /// each of the variants.
+    ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// fn check(s: Str, into: &str) {
+    ///     let mapped = s.map(
+    ///             |e| "Ephemeral",
+    ///             |s| "Static",
+    ///             |o| o.to_uppercase());
+    ///     let the_string = mapped.get_ref();
+    ///     assert_eq!(the_string, into);
+    /// }
+    /// check(Str::from_ref("Hello World"), "Ephemeral");
+    /// check(Str::from_static("Hello World"), "Static");
+    /// check(Str::from_owned("Hello World".to_string()), "HELLO WORLD");
+    /// ```
     pub fn map<EF, ET, SF, ST, OF, OT>(
         self,
         ef: EF,
@@ -632,6 +1060,21 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// Select one of the given functions to run based on which of the
     /// possible values is selected. The function will run on the
     /// inner values of the [`Maybe`]s.
+    ///
+    /// ```
+    /// # use eso::shorthand::t; use std::rc::Rc;
+    /// type Str = t::ESO<i32, char, String>;
+    /// fn check(s: Str, should: &str) {
+    ///     let str = s.merge_with(
+    ///         |e| (format!("{}", e)),
+    ///         |s| (format!("{}", s)),
+    ///         |o| o);
+    ///     assert_eq!(&str, should);
+    /// }
+    /// check(Str::from_ref(42), "42");
+    /// check(Str::from_static('!'), "!");
+    /// check(Str::from_owned("Hello World".to_owned()), "Hello World");
+    /// ```
     pub fn merge_with<EF, SF, OF, T>(self, ef: EF, sf: SF, of: OF) -> T
     where
         ME: Maybe,
@@ -720,8 +1163,24 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 impl<E, S, O> Eso<An<E>, No<S>, No<O>> {
     /// Safely move the ephemeral reference out of this [`Eso`].
     ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type OnlyE<'a> = t::E<&'a str, &'static str, String>;
+    /// let only_e = OnlyE::from_ref("Hello World");
+    /// let unwrapped = only_e.safe_unwrap_ephemeral();
+    /// assert_eq!(unwrapped, "Hello World");
+    /// ```
+    ///
     /// This method is only callable on an [`Eso`] that is statically proven
     /// to contain an ephemeral reference, and thus cannot fail.
+    ///
+    /// ```compile_fail
+    /// # use eso::shorthand::t;
+    /// type MaybeS<'a> = t::ES<&'a str, &'static str, String>;
+    /// let maybe_s = MaybeS::from_ref("Hello World");
+    /// // Compile error: maybe_s could also contain a static reference!
+    /// let unwrapped = maybe_s.safe_unwrap_ephemeral();
+    /// ```
     pub fn safe_unwrap_ephemeral(self) -> E {
         match self {
             Eso::E(An(e)) => e,
@@ -734,8 +1193,24 @@ impl<E, S, O> Eso<An<E>, No<S>, No<O>> {
 impl<E, S, O> Eso<No<E>, No<S>, An<O>> {
     /// Safely move the owned value out of this [`Eso`].
     ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type OnlyO<'a> = t::O<&'a str, &'static str, String>;
+    /// let only_o = OnlyO::from_owned("Hello World".to_string());
+    /// let unwrapped = only_o.safe_unwrap_owned();
+    /// assert_eq!(&unwrapped, "Hello World");
+    /// ```
+    ///
     /// This method is only callable on an [`Eso`] that is statically proven
     /// to contain an owned value, and thus cannot fail.
+    ///
+    /// ```compile_fail
+    /// # use eso::shorthand::t;
+    /// type MaybeS<'a> = t::SO<&'a str, &'static str, String>;
+    /// let maybe_s = MaybeS::from_owned("Hello World".to_string());
+    /// // Compile error: maybe_s could also contain a static reference!
+    /// let unwrapped = maybe_s.safe_unwrap_owned();
+    /// ```
     pub fn safe_unwrap_owned(self) -> O {
         match self {
             Eso::E(e) => e.absurd(),
@@ -746,8 +1221,22 @@ impl<E, S, O> Eso<No<E>, No<S>, An<O>> {
 
     /// Safely reference the owned value contained in this [`Eso`].
     ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type OnlyO<'a> = t::O<&'a str, &'static str, String>;
+    /// let only_o = OnlyO::from_owned("Hello World".to_string());
+    /// assert!(only_o.get_owned_ref().capacity() >= 11);
+    /// ```
+    ///
     /// This method is only callable on an [`Eso`] that is statically proven
     /// to contain an ephemeral reference, and thus cannot fail.
+    ///
+    /// ```compile_fail
+    /// # use eso::shorthand::t;
+    /// type MaybeS<'a> = t::SO<&'a str, &'static str, String>;
+    /// let maybe_s = MaybeS::from_owned("Hello World".to_string());
+    /// maybe_s.get_owned_ref()
+    /// ```
     pub fn get_owned_ref(&self) -> &O {
         match self {
             Eso::E(e) => e.absurd(),
@@ -758,8 +1247,23 @@ impl<E, S, O> Eso<No<E>, No<S>, An<O>> {
 
     /// Safely and mutably reference the owned value contained in this [`Eso`].
     ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type OnlyO<'a> = t::O<&'a str, &'static str, String>;
+    /// let mut only_o = OnlyO::from_owned("Hello ".to_string());
+    /// only_o.get_mut().push_str("World");
+    /// assert_eq!(only_o.get_ref(), "Hello World");
+    /// ```
+    ///
     /// This method is only callable on an [`Eso`] that is statically proven
     /// to contain an ephemeral reference, and thus cannot fail.
+    ///
+    /// ```compile_fail
+    /// # use eso::shorthand::t;
+    /// type MaybeS<'a> = t::SO<&'a str, &'static str, String>;
+    /// let maybe_s = MaybeS::from_owned("Hello World".to_string());
+    /// maybe_s.get_mut()
+    /// ```
     pub fn get_mut(&mut self) -> &mut O {
         match self {
             Eso::E(e) => e.absurd(),
@@ -772,8 +1276,24 @@ impl<E, S, O> Eso<No<E>, No<S>, An<O>> {
 impl<E, S, O> Eso<No<E>, An<S>, No<O>> {
     /// Safely move the static/shared reference out of this [`Eso`].
     ///
+    /// ```
+    /// # use eso::shorthand::t;
+    /// type OnlyS<'a> = t::S<&'a str, &'static str, String>;
+    /// let only_s = OnlyS::from_static("Hello World");
+    /// let unwrapped = only_s.safe_unwrap_static();
+    /// assert_eq!(unwrapped, "Hello World");
+    /// ```
+    ///
     /// This method is only callable on an [`Eso`] that is statically proven
     /// to contain a static/shared reference, and thus cannot fail.
+    ///
+    /// ```compile_fail
+    /// # use eso::shorthand::t;
+    /// type MaybeE<'a> = t::ES<&'a str, &'static str, String>;
+    /// let maybe_e = MaybeE::from_static("Hello World");
+    /// // Compile error: maybe_s could also contain a static reference!
+    /// let unwrapped = maybe_e.safe_unwrap_owned();
+    /// ```
     pub fn safe_unwrap_static(self) -> S {
         match self {
             Eso::S(An(s)) => s,
@@ -821,7 +1341,7 @@ impl<'a, T: ToOwned, MS> From<Cow<'a, T>> for Eso<An<&'a T>, MS, An<T::Owned>> {
 }
 
 /// Shorthand traits for requirements on [`Eso`]s
-/// to keep the `where` clauses short and more readable
+/// to keep the `where` clauses short and more readable.
 pub mod req {
     use crate::{
         borrow::{Borrowable, Ownable, Reborrowable},
