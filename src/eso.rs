@@ -66,6 +66,17 @@ pub type ConstrainedEsoOfEso<E, S, O> = Eso<x::E<E, S, O>, x::S<E, S, O>, x::O<E
 
 impl<E, MS, MO> Eso<An<E>, MS, MO> {
     /// Create an [`Eso`] from a reference
+    ///
+    /// ```
+    /// # use ::eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// fn make_a_str<'a>(s: &'a str) -> Str<'a> {
+    ///     Str::from_ref(s)
+    /// }
+    /// let my_string = String::from("Hello World");
+    /// let my_str = make_a_str(my_string.as_str());
+    /// ```
+
     pub const fn from_ref(e: E) -> Self {
         Eso::E(An(e))
     }
@@ -73,6 +84,12 @@ impl<E, MS, MO> Eso<An<E>, MS, MO> {
 
 impl<ME, S, MO> Eso<ME, An<S>, MO> {
     /// Create an [`Eso`] from a shared/static reference
+    ///
+    /// ```
+    /// # use ::eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_str = Str::from_static("Hello World");
+    /// ```
     pub const fn from_static(s: S) -> Self {
         Eso::S(An(s))
     }
@@ -80,6 +97,12 @@ impl<ME, S, MO> Eso<ME, An<S>, MO> {
 
 impl<ME, MS, O> Eso<ME, MS, An<O>> {
     /// Create an [`Eso`] from an owned object
+    ///
+    /// ```
+    /// # use ::eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let my_str = Str::from_owned("Hello World".into());
+    /// ```
     pub const fn from_owned(o: O) -> Self {
         Eso::O(An(o))
     }
@@ -116,6 +139,31 @@ impl<ME, MS, O> Eso<ME, MS, An<O>> {
                 }
             }
             Eso::O(An(o)) => o,
+        }
+    }
+
+    /// ```
+    /// # use ::eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let mut my_str = Str::from_ref("Hello ");
+    /// my_str.mutate(|s| s.push_str("World!"));
+    /// assert!(my_str.is_owning());
+    /// assert_eq!(my_str.get_ref(), "Hello World!");
+    /// ```
+    pub fn mutate<'r, F, T>(&'r mut self, f: F) -> T
+    where
+        ME: MOwnableRef<O> + Clone,
+        MS: MOwnableRef<O> + Clone,
+        for<'f> F: FnOnce(&'f mut O) -> T,
+    {
+        match self {
+            Eso::E(e) => *self = Eso::O(An(e.to_owned())),
+            Eso::S(s) => *self = Eso::O(An(s.to_owned())),
+            Eso::O(_) => (),
+        };
+        match self {
+            Eso::O(An(o)) => f(o),
+            _ => unreachable!(),
         }
     }
 }
