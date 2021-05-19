@@ -30,11 +30,7 @@ use crate::eso::Eso;
 /// | Uppercase | `T`: value      | `An<T>`        | present      |
 /// | Missing   | `T`: value      | `No<T>`        | absent       |
 /// | Lowercase | `MT`: [`Maybe`] | `MT`           | pass-through |
-#[allow(
-    non_camel_case_types,
-    missing_docs,
-    clippy::clippy::upper_case_acronyms
-)]
+#[allow(non_camel_case_types, missing_docs, clippy::upper_case_acronyms)]
 pub mod t {
     use crate::maybe::{An, No};
 
@@ -131,11 +127,7 @@ pub mod t {
 /// | Uppercase | `MT`: [`Maybe`] | `An<T::Inner>` | present      |
 /// | Missing   | `MT`: [`Maybe`] | `No<T::Inner>` | absent       |
 /// | Lowercase | `MT`: [`Maybe`] | `MT`           | pass-through |
-#[allow(
-    non_camel_case_types,
-    missing_docs,
-    clippy::clippy::upper_case_acronyms
-)]
+#[allow(non_camel_case_types, missing_docs, clippy::upper_case_acronyms)]
 pub mod x {
     use crate::maybe::{An, Maybe, No};
 
