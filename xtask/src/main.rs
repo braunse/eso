@@ -5,7 +5,7 @@ use colored::Colorize;
 use eyre::Result;
 use lazy_static::lazy_static;
 use tap::Tap;
-use xshell::{cmd, mkdir_p, pushd, pushenv};
+use xshell::{cmd, mkdir_p, pushd, pushenv, rm_rf};
 
 use crate::utils::amend_env_var;
 
@@ -65,6 +65,14 @@ struct CoverTest {
     #[argh(positional)]
     /// arguments that will be forwarded to `cargo test`
     args: Vec<OsString>,
+
+    #[argh(switch)]
+    /// generate `lcov.info` file
+    lcov: bool,
+
+    #[argh(switch)]
+    /// generate HTML report
+    html: bool,
 }
 
 impl CoverTest {
@@ -86,6 +94,7 @@ impl CoverTest {
         cmd!("cargo +nightly build {release_switch...}").run()?;
         println!("* {}\n\n", "Running with profile data collection".green());
 
+        rm_rf(&*PROF_DIR)?;
         mkdir_p(&*PROF_DIR)?;
         let _profile_file = pushenv(
             "LLVM_PROFILE_FILE",
@@ -97,8 +106,15 @@ impl CoverTest {
         cmd!("cargo +nightly test {release_switch...} {passthru...}").run()?;
         println!("* {}\n\n", "Running with profile data collection".green());
 
-        let profile = if self.release { "release" } else { "debug" };
-        cmd!("grcov . -s . --binary-path ./target/{profile} -t lcov -o ./lcov.info").run()?;
+        if self.lcov {
+            let profile = if self.release { "release" } else { "debug" };
+            cmd!("grcov . -s . --binary-path ./target/{profile} -t lcov -o ./lcov.info").run()?;
+        }
+
+        if self.html {
+            let profile = if self.release { "release" } else { "debug" };
+            cmd!("grcov . -s . --binary-path ./target/{profile} -t html -o ./_cov").run()?;
+        }
         Ok(())
     }
 }
