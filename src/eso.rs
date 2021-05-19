@@ -151,7 +151,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// Returns `true` if the [`Eso`] is of the [`Eso::S`] variant.
     pub fn is_static(&self) -> bool {
         match self {
-            Eso::E(_) => true,
+            Eso::S(_) => true,
             _ => false,
         }
     }
@@ -159,7 +159,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// Returns `true` if the [`Eso`] is of the [`Eso::O`] variant.
     pub fn is_owning(&self) -> bool {
         match self {
-            Eso::E(_) => true,
+            Eso::O(_) => true,
             _ => false,
         }
     }
