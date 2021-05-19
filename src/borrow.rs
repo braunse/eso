@@ -259,6 +259,18 @@ impl<'a, T: Clone> Ownable<Box<T>> for &'a T {
     }
 }
 
+impl<'a, T: Clone> Ownable<Rc<T>> for &'a T {
+    fn own(&self) -> Rc<T> {
+        Rc::new((*self).clone())
+    }
+}
+
+impl<'a, T: Clone> Ownable<Arc<T>> for &'a T {
+    fn own(&self) -> Arc<T> {
+        Arc::new((*self).clone())
+    }
+}
+
 impl<'a, R: ToOwned> Ownable<R::Owned> for Cow<'a, R> {
     fn own(&self) -> R::Owned {
         self.clone().into_owned()
