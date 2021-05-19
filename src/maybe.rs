@@ -213,41 +213,31 @@ impl<A> Clone for No<A> {
     }
 }
 
-/**
- * **SAFETY**: Since you can't get hold of a [`No<A>`] anyway, and therefore can't ever
- * have a reference to one (in safe code), any code path where you hold one
- * across a potential panic is dead and won't ever execute.
- */
+/// **SAFETY**: Since you can't get hold of a [`No<A>`] anyway, and therefore can't ever
+/// have a reference to one (in safe code), any code path where you hold one
+/// across a potential panic is dead and won't ever execute.
 impl<A> RefUnwindSafe for No<A> {}
 
-/**
- * **SAFETY**: Since you can't get hold of a [`No<A>`] anyway, it doesn't matter at all
- * whether or not you try to send one to another thread.
- */
+/// **SAFETY**: Since you can't get hold of a [`No<A>`] anyway, it doesn't matter at all
+/// whether or not you try to send one to another thread.
 #[cfg(feature = "allow-unsafe")]
 #[allow(unsafe_code)]
 unsafe impl<A> Send for No<A> {}
 
-/**
- * **SAFETY**: Since you can't get hold of a [`No<A>`] anyway, and therefore can't ever
- * have a reference to one (in safe code), it doesn't matter at all, *how many
- * threads* you can't ever have those references on.
- */
+/// **SAFETY**: Since you can't get hold of a [`No<A>`] anyway, and therefore can't ever
+/// have a reference to one (in safe code), it doesn't matter at all, *how many
+/// threads* you can't ever have those references on.
 #[cfg(feature = "allow-unsafe")]
 #[allow(unsafe_code)]
 unsafe impl<A> Sync for No<A> {}
 
-/**
- * **SAFETY**: Since you can't get hold of a [`No<A>`] anyway, whatever detrimental
- * effects might arise from unpinning it can never happen since it's not there
- * in the first place, and the code unpinning it will never execute.
- */
+/// **SAFETY**: Since you can't get hold of a [`No<A>`] anyway, whatever detrimental
+/// effects might arise from unpinning it can never happen since it's not there
+/// in the first place, and the code unpinning it will never execute.
 impl<A> Unpin for No<A> {}
 
-/**
- * **SAFETY**: Since you can't get hold of a [`No<A>`] anyway, any code path where you
- * hold one across a potential panic is dead and will never execute.
- */
+/// **SAFETY**: Since you can't get hold of a [`No<A>`] anyway, any code path where you
+/// hold one across a potential panic is dead and will never execute.
 impl<A> UnwindSafe for No<A> {}
 
 /// Safe conversion between [`Maybe`]s.
