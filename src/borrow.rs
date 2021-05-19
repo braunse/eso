@@ -166,13 +166,13 @@ mod unix {
         }
     }
 
-    impl<'a> Ownable<'a, OsString> for &'a [u8] {
+    impl<'a> Ownable<OsString> for &'a [u8] {
         fn own(&self) -> OsString {
             OsStr::from_bytes(self).to_os_string()
         }
     }
 
-    impl<'a> Ownable<'a, PathBuf> for &'a [u8] {
+    impl<'a> Ownable<PathBuf> for &'a [u8] {
         fn own(&self) -> PathBuf {
             PathBuf::from(OsStr::from_bytes(self))
         }
@@ -185,55 +185,55 @@ mod unix {
 /// The obvious instances for [`str`], [`Path`], [`OsStr`], [`CStr`],
 /// slices as well as sized types implementing [`Clone`] are implemented
 /// out of the box.
-pub trait Ownable<'a, O: Borrowable<'a, Self>>: Sized + 'a {
+pub trait Ownable<O>: Sized {
     /// Clone the thing denoted by a generalized reference into one that
     /// is owned (does not reference another object)
     fn own(&self) -> O;
 }
 
-impl<'a> Ownable<'a, String> for &'a str {
+impl<'a> Ownable<String> for &'a str {
     fn own(&self) -> String {
         self.to_string()
     }
 }
 
-impl<'a> Ownable<'a, PathBuf> for &'a Path {
+impl<'a> Ownable<PathBuf> for &'a Path {
     fn own(&self) -> PathBuf {
         self.to_path_buf()
     }
 }
 
-impl<'a, T: Clone> Ownable<'a, Vec<T>> for &'a [T] {
+impl<'a, T: Clone> Ownable<Vec<T>> for &'a [T] {
     fn own(&self) -> Vec<T> {
         self.to_vec()
     }
 }
 
-impl<'a> Ownable<'a, OsString> for &'a OsStr {
+impl<'a> Ownable<OsString> for &'a OsStr {
     fn own(&self) -> OsString {
         self.to_os_string()
     }
 }
 
-impl<'a> Ownable<'a, PathBuf> for &'a OsStr {
+impl<'a> Ownable<PathBuf> for &'a OsStr {
     fn own(&self) -> PathBuf {
         PathBuf::from(self)
     }
 }
 
-impl<'a, T: Clone> Ownable<'a, T> for &'a T {
+impl<'a, T: Clone> Ownable<T> for &'a T {
     fn own(&self) -> T {
         (*self).clone()
     }
 }
 
-impl<'a> Ownable<'a, CString> for &'a CStr {
+impl<'a> Ownable<CString> for &'a CStr {
     fn own(&self) -> CString {
         (*self).to_owned()
     }
 }
 
-impl<'a, T: Clone> Ownable<'a, Box<T>> for &'a T {
+impl<'a, T: Clone> Ownable<Box<T>> for &'a T {
     fn own(&self) -> Box<T> {
         Box::new((*self).clone())
     }

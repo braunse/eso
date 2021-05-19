@@ -86,10 +86,19 @@ impl<ME, MS, O> Eso<ME, MS, An<O>> {
 
     /// Get a mutable reference to the contained owned value,
     /// cloning out of a referenced object if necessary.
-    pub fn to_mut<'a>(&'a mut self) -> &'a mut O
+    ///
+    /// ```
+    /// # use ::eso::shorthand::t;
+    /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
+    /// let mut my_str = Str::from_ref("Hello ");
+    /// my_str.to_mut().push_str("World!");
+    /// assert!(my_str.is_owning());
+    /// assert_eq!(my_str.get_ref(), "Hello World!");
+    /// ```
+    pub fn to_mut<'r>(&'r mut self) -> &'r mut O
     where
-        ME: MOwnableRef<'a, O> + Clone,
-        MS: MOwnableRef<'a, O> + Clone,
+        ME: MOwnableRef<O> + Clone,
+        MS: MOwnableRef<O> + Clone,
     {
         match self {
             Eso::E(e) => {
@@ -186,7 +195,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// *'lifetime-less-ness'* of the result.
     pub fn into_static<'s>(self) -> x::sO<ME, MS, MO>
     where
-        ME: MOwnableRef<'s, MO::Inner>,
+        ME: MOwnableRef<MO::Inner>,
         MO: Maybe,
     {
         match self {
@@ -209,7 +218,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// *'lifetime-less-ness'* of the result.
     pub fn to_static<'a>(&'a self) -> x::sO<ME, MS, MO>
     where
-        ME: MOwnableRef<'a, MO::Inner> + Clone,
+        ME: MOwnableRef<MO::Inner> + Clone,
         MS: Maybe + Clone,
         MO: Maybe + Clone,
     {
@@ -227,8 +236,8 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// and an owned value will be moved into the result unchanged.
     pub fn into_owning<'s>(self) -> x::O<ME, MS, MO>
     where
-        ME: MOwnableRef<'s, MO::Inner>,
-        MS: MOwnableRef<'s, MO::Inner>,
+        ME: MOwnableRef<MO::Inner>,
+        MS: MOwnableRef<MO::Inner>,
         MO: Maybe,
     {
         match self {
@@ -245,8 +254,8 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// and an owned value will be cloned into the result via [`Clone`].
     pub fn to_owning<'a>(&'a self) -> x::O<ME, MS, MO>
     where
-        ME: MOwnableRef<'a, MO::Inner> + Clone,
-        MS: MOwnableRef<'a, MO::Inner> + Clone,
+        ME: MOwnableRef<MO::Inner> + Clone,
+        MS: MOwnableRef<MO::Inner> + Clone,
         MO: Maybe + Clone,
     {
         match self {
@@ -775,7 +784,7 @@ pub mod req {
     mod r#impl {
         use super::*;
 
-        pub trait MOwnableRef<'a, T>: Maybe {
+        pub trait MOwnableRef<T>: Maybe {
             /// Clone the inner reference and forward to [`Ownable::own`]
             fn to_owned(&self) -> T
             where
@@ -784,11 +793,10 @@ pub mod req {
             fn own(self) -> T;
         }
 
-        impl<'a, T, MX> MOwnableRef<'a, T> for MX
+        impl<T, MX> MOwnableRef<T> for MX
         where
             MX: Maybe,
-            MX::Inner: Ownable<'a, T>,
-            T: Borrowable<'a, MX::Inner>,
+            MX::Inner: Ownable<T>,
         {
             fn to_owned(&self) -> T
             where
@@ -849,13 +857,12 @@ pub mod req {
     }
 
     /// A [`Maybe`] whose inner value  is [`Ownable`]
-    pub trait MOwnableRef<'a, T>: r#impl::MOwnableRef<'a, T> {}
+    pub trait MOwnableRef<T>: r#impl::MOwnableRef<T> {}
 
-    impl<'a, T, MX> MOwnableRef<'a, T> for MX
+    impl<T, MX> MOwnableRef<T> for MX
     where
         MX: Maybe,
-        MX::Inner: Ownable<'a, T>,
-        T: Borrowable<'a, MX::Inner>,
+        MX::Inner: Ownable<T>,
     {
     }
 

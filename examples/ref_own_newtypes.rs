@@ -46,7 +46,7 @@ impl<'a> Borrowable<'a, StringRef<'a>> for StaticString {
     }
 }
 
-impl<'a> Ownable<'a, OwnedString> for StringRef<'a> {
+impl<'a> Ownable<OwnedString> for StringRef<'a> {
     fn own(&self) -> OwnedString {
         OwnedString(self.0.to_owning().relax())
     }
