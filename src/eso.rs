@@ -24,6 +24,7 @@
 use crate::{
     borrow::Reborrowable,
     maybe::{An, Impossible, Maybe, MaybeMap, No, Relax},
+    shorthand::{t, x},
     unify::Unify3,
 };
 use std::borrow::Cow;
@@ -610,7 +611,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// from the variants according to the rules of [`unify`](crate::unify)
     ///
     /// ```
-    /// # use eso::eso::*;
+    /// # use ::eso::{eso::*, shorthand::*};
     /// type E<'a> = t::E<&'a i32, &'static i32, i32>;
     /// type S<'a> = t::S<&'a i32, &'static i32, i32>;
     /// type O<'a> = t::O<&'a i32, &'static i32, i32>;
@@ -632,7 +633,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// unified with anything else:
     ///
     /// ```
-    /// # use eso::eso::*;
+    /// # use ::eso::{eso::*, shorthand::*};
     /// # struct T1; struct T2; struct T3; struct T4; struct T5; struct T6;
     /// type E = t::E<i32, T1, T2>;
     /// type S = t::S<T3, i32, T4>;
@@ -760,216 +761,6 @@ impl<'a, T: ToOwned, MS> From<Cow<'a, T>> for Eso<An<&'a T>, MS, An<T::Owned>> {
             Cow::Owned(o) => Eso::from_owned(o),
         }
     }
-}
-
-/// Shorthand type aliases for [`Eso`].
-///
-/// The type names derive from the three components `E`, `S`, `O`,
-/// but the input type arguments are transformed according to the
-/// rules:
-///
-/// | Rule      | Type parameter  | Transformed to | Meaning      |
-/// |-----------|-----------------|----------------|--------------|
-/// | Uppercase | `T`: value      | `An<T>`        | present      |
-/// | Missing   | `T`: value      | `No<T>`        | absent       |
-/// | Lowercase | `MT`: [`Maybe`] | `MT`           | pass-through |
-#[allow(
-    non_camel_case_types,
-    missing_docs,
-    clippy::clippy::upper_case_acronyms
-)]
-pub mod t {
-    use crate::maybe::{An, No};
-
-    /// [`Eso`] with `E` present, `S` present, `O` present, see [shorthand module docs](super::t)
-    pub type ESO<E, S, O> = super::Eso<An<E>, An<S>, An<O>>;
-
-    /// [`Eso`] with `E` present, `S` present, `O` pass-through, see [shorthand module docs](super::t)
-    pub type ESo<E, S, MO> = super::Eso<An<E>, An<S>, MO>;
-
-    /// [`Eso`] with `E` present, `S` pass-through, `O` present, see [shorthand module docs](super::t)
-    pub type EsO<E, MS, O> = super::Eso<An<E>, MS, An<O>>;
-
-    /// [`Eso`] with `E` pass-through, `S` present, `O` present, see [shorthand module docs](super::t)
-    pub type eSO<ME, S, O> = super::Eso<ME, An<S>, An<O>>;
-
-    /// [`Eso`] with `E` present, `S` pass-through, `O` pass-through, see [shorthand module docs](super::t)
-    pub type Eso<E, MS, MO> = super::Eso<An<E>, MS, MO>;
-
-    /// [`Eso`] with `E` pass-through, `S` present, `O` pass-through, see [shorthand module docs](super::t)
-    pub type eSo<ME, S, MO> = super::Eso<ME, An<S>, MO>;
-
-    /// [`Eso`] with `E` pass-through, `S` pass-through, `O` present, see [shorthand module docs](super::t)
-    pub type esO<ME, MS, O> = super::Eso<ME, MS, An<O>>;
-
-    /// [`Eso`] with `E` pass-through, `S` pass-through, `O` pass-through - actually an alias for [`Eso`], see [shorthand module docs](super::t)
-    pub type eso<ME, MS, MO> = super::Eso<ME, MS, MO>;
-
-    /// [`Eso`] with `E` present, `S` present, `O` absent, see [shorthand module docs](super::t)
-    pub type ES<E, S, O> = super::Eso<An<E>, An<S>, No<O>>;
-
-    /// [`Eso`] with `E` present, `S` pass-through, `O` absent, see [shorthand module docs](super::t)
-    pub type Es<E, MS, O> = super::Eso<An<E>, MS, No<O>>;
-
-    /// [`Eso`] with `E` pass-through, `S` present, `O` absent, see [shorthand module docs](super::t)
-    pub type eS<ME, S, O> = super::Eso<ME, An<S>, No<O>>;
-
-    /// [`Eso`] with `E` pass-through, `S` pass-through, `O` absent, see [shorthand module docs](super::t)
-    pub type es<ME, MS, O> = super::Eso<ME, MS, No<O>>;
-
-    /// [`Eso`] with `E` present, `S` absent, `O` present, see [shorthand module docs](super::t)
-    pub type EO<E, S, O> = super::Eso<An<E>, No<S>, An<O>>;
-
-    /// [`Eso`] with `E` present, `S` absent, `O` pass-through, see [shorthand module docs](super::t)
-    pub type Eo<E, S, MO> = super::Eso<An<E>, No<S>, MO>;
-
-    /// [`Eso`] with `E` pass-through, `S` absent, `O` present, see [shorthand module docs](super::t)
-    pub type eO<ME, S, O> = super::Eso<ME, No<S>, An<O>>;
-
-    /// [`Eso`] with `E` pass-through, `S` absent, `O` pass-through, see [shorthand module docs](super::t)
-    pub type eo<ME, S, MO> = super::Eso<ME, No<S>, MO>;
-
-    /// [`Eso`] with `E` absent, `S` present, `O` present, see [shorthand module docs](super::t)
-    pub type SO<E, S, O> = super::Eso<No<E>, An<S>, An<O>>;
-
-    /// [`Eso`] with `E` absent, `S` present, `O` pass-through, see [shorthand module docs](super::t)
-    pub type So<E, S, MO> = super::Eso<No<E>, An<S>, MO>;
-
-    /// [`Eso`] with `E` absent, `S` pass-through, `O` present, see [shorthand module docs](super::t)
-    pub type sO<E, MS, O> = super::Eso<No<E>, MS, An<O>>;
-
-    /// [`Eso`] with `E` absent, `S` pass-through, `O` pass-through, see [shorthand module docs](super::t)
-    pub type so<E, MS, MO> = super::Eso<No<E>, MS, MO>;
-
-    /// [`Eso`] with `E` present, `S` absent, `O` absent, see [shorthand module docs](super::t)
-    pub type E<E, S, O> = super::Eso<An<E>, No<S>, No<O>>;
-
-    /// [`Eso`] with `E` pass-through, `S` absent, `O` absent, see [shorthand module docs](super::t)
-    pub type e<ME, S, O> = super::Eso<ME, No<S>, No<O>>;
-
-    /// [`Eso`] with `E` absent, `S` present, `O` absent, see [shorthand module docs](super::t)
-    pub type S<E, S, O> = super::Eso<No<E>, An<S>, No<O>>;
-
-    /// [`Eso`] with `E` absent, `S` pass-through, `O` absent, see [shorthand module docs](super::t)
-    pub type s<E, MS, O> = super::Eso<No<E>, MS, No<O>>;
-
-    /// [`Eso`] with `E` absent, `S` absent, `O` present, see [shorthand module docs](super::t)
-    pub type O<E, S, O> = super::Eso<No<E>, No<S>, An<O>>;
-
-    /// [`Eso`] with `E` absent, `S` absent, `O` pass-through, see [shorthand module docs](super::t)
-    pub type o<E, S, MO> = super::Eso<No<E>, No<S>, MO>;
-
-    /// [`Eso`] with `E` absent, `S` absent, `O` absent - this is [`Impossible`](crate::maybe::Impossible), see [shorthand module docs](super::t)
-    pub type None<E, S, O> = super::Eso<No<E>, No<S>, No<O>>;
-}
-
-/// Shorthand type aliases for transformations of an [`Eso`].
-///
-/// The type names derive from the three components `ME`, `MS`, `MO`,
-/// but the input type arguments are transformed according to the
-/// rules:
-///
-/// | Rule      | Type parameter  | Transformed to | Meaning      |
-/// |-----------|-----------------|----------------|--------------|
-/// | Uppercase | `MT`: [`Maybe`] | `An<T::Inner>` | present      |
-/// | Missing   | `MT`: [`Maybe`] | `No<T::Inner>` | absent       |
-/// | Lowercase | `MT`: [`Maybe`] | `MT`           | pass-through |
-#[allow(
-    non_camel_case_types,
-    missing_docs,
-    clippy::clippy::upper_case_acronyms
-)]
-pub mod x {
-    use crate::maybe::{An, Maybe, No};
-
-    /// [`Eso`] with `E` present, `S` present, `O` present, see [shorthand module docs](super::x)
-    pub type ESO<ME, MS, MO> =
-        super::Eso<An<<ME as Maybe>::Inner>, An<<MS as Maybe>::Inner>, An<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` present, `S` present, `O` pass-through, see [shorthand module docs](super::x)
-    pub type ESo<ME, MS, MO> = super::Eso<An<<ME as Maybe>::Inner>, An<<MS as Maybe>::Inner>, MO>;
-
-    /// [`Eso`] with `E` present, `S` pass-through, `O` present, see [shorthand module docs](super::x)
-    pub type EsO<ME, MS, MO> = super::Eso<An<<ME as Maybe>::Inner>, MS, An<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` pass-through, `S` present, `O` present, see [shorthand module docs](super::x)
-    pub type eSO<ME, MS, MO> = super::Eso<ME, An<<MS as Maybe>::Inner>, An<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` present, `S` pass-through, `O` pass-through, see [shorthand module docs](super::x)
-    pub type Eso<ME, MS, MO> = super::Eso<An<<ME as Maybe>::Inner>, MS, MO>;
-
-    /// [`Eso`] with `E` pass-through, `S` present, `O` pass-through, see [shorthand module docs](super::x)
-    pub type eSo<ME, MS, MO> = super::Eso<ME, An<<MS as Maybe>::Inner>, MO>;
-
-    /// [`Eso`] with `E` pass-through, `S` pass-through, `O` present, see [shorthand module docs](super::x)
-    pub type esO<ME, MS, MO> = super::Eso<ME, MS, An<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` pass-through, `S` pass-through, `O` pass-through - actually an alias for [`Eso`], see [shorthand module docs](super::x)
-    pub type eso<ME, MS, MO> = super::Eso<ME, MS, MO>;
-
-    /// [`Eso`] with `E` present, `S` present, `O` absent, see [shorthand module docs](super::x)
-    pub type ES<ME, MS, MO> =
-        super::Eso<An<<ME as Maybe>::Inner>, An<<MS as Maybe>::Inner>, No<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` present, `S` pass-through, `O` absent, see [shorthand module docs](super::x)
-    pub type Es<ME, MS, MO> = super::Eso<An<<ME as Maybe>::Inner>, MS, No<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` pass-through, `S` present, `O` absent, see [shorthand module docs](super::x)
-    pub type eS<ME, MS, MO> = super::Eso<ME, An<<MS as Maybe>::Inner>, No<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` pass-through, `S` pass-through, `O` absent, see [shorthand module docs](super::x)
-    pub type es<ME, MS, MO> = super::Eso<ME, MS, No<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` present, `S` absent, `O` present, see [shorthand module docs](super::x)
-    pub type EO<ME, MS, MO> =
-        super::Eso<An<<ME as Maybe>::Inner>, No<<MS as Maybe>::Inner>, An<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` present, `S` absent, `O` pass-through, see [shorthand module docs](super::x)
-    pub type Eo<ME, MS, MO> = super::Eso<An<<ME as Maybe>::Inner>, No<<MS as Maybe>::Inner>, MO>;
-
-    /// [`Eso`] with `E` pass-through, `S` absent, `O` present, see [shorthand module docs](super::x)
-    pub type eO<ME, MS, MO> = super::Eso<ME, No<<MS as Maybe>::Inner>, An<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` pass-through, `S` absent, `O` pass-through, see [shorthand module docs](super::x)
-    pub type eo<ME, MS, MO> = super::Eso<ME, No<<MS as Maybe>::Inner>, MO>;
-
-    /// [`Eso`] with `E` absent, `S` present, `O` present, see [shorthand module docs](super::x)
-    pub type SO<ME, MS, MO> =
-        super::Eso<No<<ME as Maybe>::Inner>, An<<MS as Maybe>::Inner>, An<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` absent, `S` present, `O` pass-through, see [shorthand module docs](super::x)
-    pub type So<ME, MS, MO> = super::Eso<No<<ME as Maybe>::Inner>, An<<MS as Maybe>::Inner>, MO>;
-
-    /// [`Eso`] with `E` absent, `S` pass-through, `O` present, see [shorthand module docs](super::x)
-    pub type sO<ME, MS, MO> = super::Eso<No<<ME as Maybe>::Inner>, MS, An<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` absent, `S` pass-through, `O` pass-through, see [shorthand module docs](super::x)
-    pub type so<ME, MS, MO> = super::Eso<No<<ME as Maybe>::Inner>, MS, MO>;
-
-    /// [`Eso`] with `E` present, `S` absent, `O` absent, see [shorthand module docs](super::x)
-    pub type E<ME, MS, MO> =
-        super::Eso<An<<ME as Maybe>::Inner>, No<<MS as Maybe>::Inner>, No<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` pass-through, `S` absent, `O` absent, see [shorthand module docs](super::x)
-    pub type e<ME, MS, MO> = super::Eso<ME, No<<MS as Maybe>::Inner>, No<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` absent, `S` present, `O` absent, see [shorthand module docs](super::x)
-    pub type S<ME, MS, MO> =
-        super::Eso<No<<ME as Maybe>::Inner>, An<<MS as Maybe>::Inner>, No<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` absent, `S` pass-through, `O` absent, see [shorthand module docs](super::x)
-    pub type s<ME, MS, MO> = super::Eso<No<<ME as Maybe>::Inner>, MS, No<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` absent, `S` absent, `O` present, see [shorthand module docs](super::x)
-    pub type O<ME, MS, MO> =
-        super::Eso<No<<ME as Maybe>::Inner>, No<<MS as Maybe>::Inner>, An<<MO as Maybe>::Inner>>;
-
-    /// [`Eso`] with `E` absent, `S` absent, `O` pass-through, see [shorthand module docs](super::x)
-    pub type o<ME, MS, MO> = super::Eso<No<<ME as Maybe>::Inner>, No<<MS as Maybe>::Inner>, MO>;
-
-    /// [`Eso`] with `E` absent, `S` absent, `O` absent - this is [`Impossible`](crate::maybe::Impossible), see [shorthand module docs](super::x)
-    pub type None<ME, MS, MO> =
-        super::Eso<No<<ME as Maybe>::Inner>, No<<MS as Maybe>::Inner>, No<<MO as Maybe>::Inner>>;
 }
 
 /// Shorthand traits for requirements on [`Eso`]s

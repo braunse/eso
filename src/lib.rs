@@ -68,10 +68,10 @@
 pub mod borrow;
 pub mod eso;
 pub mod maybe;
+pub mod shorthand;
 pub mod unify;
 
 #[doc(inline)]
 pub use crate::eso::Eso;
-pub use crate::eso::{t, x};
 #[doc(inline)]
 pub use crate::maybe::{An, No};

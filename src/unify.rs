@@ -95,7 +95,7 @@ use crate::maybe::{An, Impossible, No};
 /// type parameters can be unified:
 ///
 /// ```
-/// # use eso::{eso::*, maybe::*, unify::*};
+/// # use eso::{eso::*, maybe::*, unify::*, shorthand::t};
 /// type ESO1 = t::S<&'static str, &'static str, String>;
 /// type ESO2 = t::O<&'static str, &'static str, String>;
 /// type Merged = t::SO<&'static str, &'static str, String>;
