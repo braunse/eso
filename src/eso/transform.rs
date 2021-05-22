@@ -189,7 +189,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// Borrow an ephemeral reference.
     ///
     /// Clones an already-existing ephemeral reference,
-    /// [reborrows](Reborrowable) a shared/static reference or
+    /// [reborrows](crate::borrow::Reborrowable::reborrow) a shared/static reference or
     /// [borrows](crate::borrow::Borrowable) a generalized reference to
     /// an owned value.
     ///

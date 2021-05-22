@@ -15,8 +15,8 @@
 //! on the surface of your library.
 //!
 //! [`Eso`] is meant as a building block for libraries that
-//! need the additional flexibility compared to the standard [`Cow`]
-//! type.
+//! need the additional flexibility compared to the standard
+//! [`Cow`](std::borrow::Cow) type.
 
 use crate::shorthand::x;
 
@@ -27,10 +27,10 @@ use crate::shorthand::x;
 /// with a lifetime that is not `'static`), a **S**tatic reference
 /// and an **O**wned value.
 ///
-/// All three of the type parameters can be [`An<T>`] or [`No<T>`],
-/// which allows to construct subsets of the full functionality,
-/// and to statically keep track of which variants may exist at
-/// any given point in the code.
+/// All three of the type parameters can be [`An<T>`](crate::maybe::An)
+/// or [`No<T>`](crate::maybe::No), which allows to construct subsets of
+/// the fullfunctionality, and to statically keep track of which variants may
+/// exist at any given point in the code.
 ///
 /// If the parameter types statically specify that
 /// only one variant can have a value, e.g. `Eso<An<E>, No<S>, No<O>>`

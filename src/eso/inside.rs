@@ -138,8 +138,8 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Transform into a [`Cow`].
     ///
-    /// [Reborrows](Reborrowable) an ephemeral or static/shared reference,
-    /// preserves an owned value.
+    /// [Reborrows](crate::borrow::Reborrowable::reborrow) an ephemeral or
+    /// static/shared reference, preserves an owned value.
     ///
     /// ```
     /// # use eso::shorthand::t; use std::borrow::Cow;
