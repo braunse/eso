@@ -6,7 +6,7 @@
 
 use std::borrow::Cow;
 
-use crate::{borrow::Reborrowable, maybe::An};
+use crate::maybe::An;
 
 use super::*;
 
@@ -58,8 +58,9 @@ impl<E, MS, O> Eso<An<E>, MS, An<O>> {
     /// Create an [`Eso`] from a [`Cow`].
     ///
     /// This will either convert the reference from a [`Cow::Borrowed`]
-    /// into the correct generalized reference type via [`Reborrowable`]
-    /// or take ownership of the owned value from a [`Cow::Owned`].
+    /// into the correct generalized reference type via
+    /// [`Borrow`](crate::borrow::Borrow) or take ownership of the owned
+    /// value from a [`Cow::Owned`].
     ///
     /// ```
     /// # use eso::shorthand::t; use std::borrow::Cow;
@@ -67,20 +68,19 @@ impl<E, MS, O> Eso<An<E>, MS, An<O>> {
     ///
     /// let owned_eso = Str::from_cow(Cow::Owned("Hello World".to_string()));
     /// assert!(owned_eso.is_owning());
-    /// assert_eq!(owned_eso.get_ref(), "Hello World");
+    /// assert_eq!(owned_eso.get_ref::<&str>(), "Hello World");
     ///
     /// let borrowed_eso = Str::from_cow(Cow::Borrowed("Hello World"));
     /// assert!(borrowed_eso.is_reference());
-    /// assert_eq!(borrowed_eso.get_ref(), "Hello World");
+    /// assert_eq!(borrowed_eso.get_ref::<&str>(), "Hello World");
     /// ```
     pub fn from_cow<'a, T: ToOwned + ?Sized>(cow: Cow<'a, T>) -> Self
     where
-        E: 'a,
-        &'a T: Reborrowable<'a, E>,
+        E: From<&'a T>,
         O: From<T::Owned>,
     {
         match cow {
-            Cow::Borrowed(r) => Eso::E(An(r.reborrow())),
+            Cow::Borrowed(r) => Eso::E(An(r.into())),
             Cow::Owned(o) => Eso::O(An(o.into())),
         }
     }
@@ -88,11 +88,10 @@ impl<E, MS, O> Eso<An<E>, MS, An<O>> {
 
 impl<'a, T, E, MS, MO> From<&'a T> for Eso<An<E>, MS, MO>
 where
-    E: 'a,
-    &'a T: Reborrowable<'a, E>,
+    E: From<&'a T>,
 {
     fn from(r: &'a T) -> Self {
-        Eso::E(An(r.reborrow()))
+        Eso::E(An(r.into()))
     }
 }
 

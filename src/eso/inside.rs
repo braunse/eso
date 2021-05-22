@@ -5,7 +5,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::{
-    eso::req::{MBorrowable, MOwnableRef, MReborrowable, MUnwrapInto},
+    eso::req::{MBorrow, MTake, MUnwrapInto},
     maybe::{An, Impossible, Maybe, No},
 };
 
@@ -23,12 +23,12 @@ impl<ME, MS, O> Eso<ME, MS, An<O>> {
     /// let mut my_str = Str::from_ref("Hello ");
     /// my_str.to_mut().push_str("World!");
     /// assert!(my_str.is_owning());
-    /// assert_eq!(my_str.get_ref(), "Hello World!");
+    /// assert_eq!(my_str.get_ref::<&str>(), "Hello World!");
     /// ```
     pub fn to_mut(&mut self) -> &mut O
     where
-        ME: MOwnableRef<O> + Clone,
-        MS: MOwnableRef<O> + Clone,
+        ME: MTake<O> + Clone,
+        MS: MTake<O> + Clone,
     {
         match self {
             Eso::E(e) => {
@@ -58,12 +58,12 @@ impl<ME, MS, O> Eso<ME, MS, An<O>> {
     /// let mut my_str = Str::from_ref("Hello ");
     /// my_str.mutate(|s| s.push_str("World!"));
     /// assert!(my_str.is_owning());
-    /// assert_eq!(my_str.get_ref(), "Hello World!");
+    /// assert_eq!(my_str.get_ref::<&str>(), "Hello World!");
     /// ```
     pub fn mutate<F, T>(&mut self, f: F) -> T
     where
-        ME: MOwnableRef<O> + Clone,
-        MS: MOwnableRef<O> + Clone,
+        ME: MTake<O> + Clone,
+        MS: MTake<O> + Clone,
         F: FnOnce(&mut O) -> T,
     {
         match self {
@@ -86,17 +86,17 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
     /// let ephemeral = Str::from_ref("Hello World");
     /// let owning = Str::from_owned("Hello World".to_string());
-    /// assert_eq!(ephemeral.get_ref(), owning.get_ref());
+    /// assert_eq!(ephemeral.get_ref::<&str>(), owning.get_ref::<&str>());
     /// ```
     pub fn get_ref<'a, T: 'a>(&'a self) -> T
     where
-        ME: Clone + MReborrowable<'a, T>,
-        MS: Clone + MReborrowable<'a, T>,
-        MO: MBorrowable<'a, T>,
+        ME: MBorrow<'a, T>,
+        MS: MBorrow<'a, T>,
+        MO: MBorrow<'a, T>,
     {
         match self {
-            Eso::E(e) => e.clone().reborrow(),
-            Eso::S(s) => s.clone().reborrow(),
+            Eso::E(e) => e.borrow(),
+            Eso::S(s) => s.borrow(),
             Eso::O(o) => o.borrow(),
         }
     }
@@ -111,7 +111,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// if let Some(mut_ref) = my_int.try_get_mut() {
     ///     *mut_ref += 2;
     /// }
-    /// assert_eq!(my_int.get_ref(), &42);
+    /// assert_eq!(my_int.get_ref::<&i32>(), &42);
     /// ```
     ///
     /// Return `None` if `self` contains a reference:
@@ -138,8 +138,11 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Transform into a [`Cow`].
     ///
-    /// [Reborrows](crate::borrow::Reborrowable::reborrow) an ephemeral or
-    /// static/shared reference, preserves an owned value.
+    /// The contained references must already be compatible with
+    /// the requirements of [`Cow<'a, T>`]:
+    ///
+    ///   * The `E` and `S` inner values must be [`Into<&'a T>`]
+    ///   * The `O` inner value must be [`Into<T::Owned>`]
     ///
     /// ```
     /// # use eso::shorthand::t; use std::borrow::Cow;
@@ -151,13 +154,13 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// ```
     pub fn into_cow<'a, T: ?Sized + ToOwned + 'a>(self) -> Cow<'a, T>
     where
-        ME: MReborrowable<'a, &'a T>,
-        MS: MReborrowable<'a, &'a T>,
+        ME: MUnwrapInto<&'a T>,
+        MS: MUnwrapInto<&'a T>,
         MO: MUnwrapInto<T::Owned>,
     {
         match self {
-            Eso::E(e) => Cow::Borrowed(e.reborrow()),
-            Eso::S(s) => Cow::Borrowed(s.reborrow()),
+            Eso::E(e) => Cow::Borrowed(e.unwrap_into()),
+            Eso::S(s) => Cow::Borrowed(s.unwrap_into()),
             Eso::O(o) => Cow::Owned(o.unwrap_into()),
         }
     }
@@ -270,7 +273,7 @@ impl<E, S, O> Eso<No<E>, No<S>, An<O>> {
     /// type OnlyO<'a> = t::O<&'a str, &'static str, String>;
     /// let mut only_o = OnlyO::from_owned("Hello ".to_string());
     /// only_o.get_mut().push_str("World");
-    /// assert_eq!(only_o.get_ref(), "Hello World");
+    /// assert_eq!(only_o.get_ref::<&str>(), "Hello World");
     /// ```
     ///
     /// This method is only callable on an [`Eso`] that is statically proven

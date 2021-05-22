@@ -9,7 +9,7 @@
 use std::{borrow::Cow, ops::Deref};
 
 use eso::{
-    borrow::{Borrowable, Ownable},
+    borrow::{Borrow, Take},
     An, Eso,
 };
 
@@ -76,13 +76,13 @@ impl AsRef<str> for WrappedString<'_> {
     }
 }
 
-impl<'a, 'b: 'a> Borrowable<'a, WrappedString<'a>> for WrappedString<'b> {
+impl<'a, 'b: 'a> Borrow<'a, WrappedString<'a>> for WrappedString<'b> {
     fn borrow(&'a self) -> WrappedString<'a> {
         self.narrow()
     }
 }
 
-impl<'a> Ownable<WrappedString<'static>> for WrappedString<'a> {
+impl<'a> Take<WrappedString<'static>> for WrappedString<'a> {
     fn to_owned(&self) -> WrappedString<'static> {
         WrappedString(self.0.clone().into_owning().relax())
     }

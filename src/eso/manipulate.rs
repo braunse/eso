@@ -17,11 +17,11 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
     /// let my_ref = Str::from_ref("Hello World");
     /// let mapped = my_ref.map_e(|_| "Ha!");
-    /// assert_eq!(mapped.get_ref(), "Ha!");
+    /// assert_eq!(mapped.get_ref::<&str>(), "Ha!");
     ///
     /// let my_static = Str::from_static("Hello World");
     /// let mapped = my_static.map_e(|_| "Ha!");
-    /// assert_eq!(mapped.get_ref(), "Hello World");
+    /// assert_eq!(mapped.get_ref::<&str>(), "Hello World");
     /// ```
     pub fn map_e<F, T>(self, f: F) -> Eso<ME::Out, MS, MO>
     where
@@ -43,11 +43,11 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
     /// let my_static = Str::from_static("Hello World");
     /// let mapped = my_static.map_s(|_| "Ha!");
-    /// assert_eq!(mapped.get_ref(), "Ha!");
+    /// assert_eq!(mapped.get_ref::<&str>(), "Ha!");
     ///
     /// let my_ref = Str::from_ref("Hello World");
     /// let mapped = my_ref.map_s(|_| "Ha!");
-    /// assert_eq!(mapped.get_ref(), "Hello World");
+    /// assert_eq!(mapped.get_ref::<&str>(), "Hello World");
     /// ```
     pub fn map_s<F, T>(self, f: F) -> Eso<ME, MS::Out, MO>
     where
@@ -69,11 +69,11 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// type Str<'a> = t::ESO<&'a str, &'static str, String>;
     /// let my_ref = Str::from_owned("Hello World".to_string());
     /// let mapped = my_ref.map_o(|e| e.to_uppercase());
-    /// assert_eq!(mapped.get_ref(), "HELLO WORLD");
+    /// assert_eq!(mapped.get_ref::<&str>(), "HELLO WORLD");
     ///
     /// let my_static = Str::from_static("Hello World");
     /// let mapped = my_static.map_o(|e| e.to_uppercase());
-    /// assert_eq!(mapped.get_ref(), "Hello World");
+    /// assert_eq!(mapped.get_ref::<&str>(), "Hello World");
     /// ```
     pub fn map_o<F, T>(self, f: F) -> Eso<ME, MS, MO::Out>
     where
@@ -98,7 +98,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     ///             |e| "Ephemeral",
     ///             |s| "Static",
     ///             |o| o.to_uppercase());
-    ///     let the_string = mapped.get_ref();
+    ///     let the_string = mapped.get_ref::<&str>();
     ///     assert_eq!(the_string, into);
     /// }
     /// check(Str::from_ref("Hello World"), "Ephemeral");

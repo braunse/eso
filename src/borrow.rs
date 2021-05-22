@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-//! The [`Ownable`] and [`Borrowable`] traits abstract over the duality
+//! The [`Take`] and [`Borrow`] traits abstract over the duality
 //! between owned and borrowed types, much in the same way as the
 //! standard-library [`Borrow`](std::borrow::Borrow) and
 //! [`ToOwned`](std::borrow::ToOwned) traits do.
@@ -12,9 +12,47 @@
 //! The difference between these and the standard-library traits is
 //! that the traits here are more generic. See the specific traits
 //! for details.
-
+//!
+//! `Eso` differentiates three different categories of values:
+//!
+//! |       | Category  | Analogy            | Description
+//! |------:|-----------|--------------------|----------------------
+//! | **E** | Ephemeral | `&'a `[`str`]      | A reference to a shared value with a limited lifetime
+//! | **S** | Static    | `&'static `[`str`] | A reference to a shared value that client code can hold on to indefinitely
+//! | **O** | Owned     | [`String`]         | A value that is exclusively owned and can be mutated (if no references to it have been borrowed out)
+//!
+//! These characteristics are enforced by [`Eso`](crate::eso::Eso)
+//! only on a per-function basis, but not in general. Client code should
+//! enforce them where necessary.
+//!
+//! This module defines traits to convert between the categories:
+//!
+//! | From      | To Ephemeral | To Static                                          | To Owned
+//! |-----------|--------------|----------------------------------------------------|----------
+//! | Ephemeral |              | `TryInternRef`, `InternRef`                        | [`Take`]
+//! | Static    | [`Borrow`]   |                                                    | [`Take`]
+//! | Owned     | [`Borrow`]   | `TryInternRef`, `TryIntern`, `InternRef`, `Intern` |
+//!
+//! As can be seen from the table, there is some additional complexity
+//! regarding the interning operation:
+//!
+//!  1. **Interning may fail:** Depending on the implementation, not all
+//!     values may have a static counterpart.
+//!  2. **Owned values may offer optimization opportunities:** If the
+//!     owned value is not needed after the interning operation, it is
+//!     cheaper to move it into the interning function.
+//!
+//! ## Open questions / TODO
+//!
+//!  - [ ] actually implement the `...Intern...` traits
+//!  - [ ] think about naming:
+//!    - `Borrow` clashes with `std`
+//!    - `Take` does not seem like a good description of what is actually
+//!      happening
+//!  - [ ] is `Borrow`ing from an Owned really the same operation as
+//!    `Borrow`ing from a static reference?
 use std::{
-    borrow::{Borrow, Cow},
+    borrow::Cow,
     ffi::{CStr, CString, OsStr, OsString},
     path::{Path, PathBuf},
     rc::Rc,
@@ -24,7 +62,7 @@ use std::{
 /// A value that can be borrowed as a generalized reference of type `T`.
 ///
 /// ```
-/// # use eso::borrow::Borrowable;
+/// # use eso::borrow::Borrow;
 /// let value = String::from("Hello World");
 /// let reference: &str = value.borrow();
 /// ```
@@ -34,45 +72,45 @@ use std::{
 /// such as [`Cow`]s:
 ///
 /// ```
-/// # use eso::borrow::Borrowable; use std::borrow::Cow;
+/// # use eso::borrow::Borrow; use std::borrow::Cow;
 /// let value = String::from("Hello World");
 /// let reference: Cow<str> = value.borrow();
 /// ```
-pub trait Borrowable<'a, T: 'a> {
+pub trait Borrow<'a, T: 'a> {
     /// Borrow a generalized reference of type `T`.
     fn borrow(&'a self) -> T;
 }
 
-impl<'a, T: ?Sized> Borrowable<'a, &'a T> for Box<T> {
+impl<'a, T: ?Sized> Borrow<'a, &'a T> for Box<T> {
     #[inline]
     fn borrow(&'a self) -> &'a T {
         &**self
     }
 }
 
-impl<'a, T: ?Sized> Borrowable<'a, &'a T> for Arc<T> {
+impl<'a, T: ?Sized> Borrow<'a, &'a T> for Arc<T> {
     #[inline]
     fn borrow(&'a self) -> &'a T {
         &**self
     }
 }
 
-impl<'a, T: ?Sized> Borrowable<'a, &'a T> for Rc<T> {
+impl<'a, T: ?Sized> Borrow<'a, &'a T> for Rc<T> {
     #[inline]
     fn borrow(&'a self) -> &'a T {
         &**self
     }
 }
 
-impl<'a, T> Borrowable<'a, &'a T> for T {
+impl<'a, T> Borrow<'a, &'a T> for T {
     fn borrow(&'a self) -> &'a T {
         self
     }
 }
 
-impl<'a, T, R> Borrowable<'a, Cow<'a, R>> for T
+impl<'a, T, R> Borrow<'a, Cow<'a, R>> for T
 where
-    T: Borrow<R>,
+    T: std::borrow::Borrow<R>,
     R: ?Sized + ToOwned<Owned = T>,
 {
     fn borrow(&'a self) -> Cow<R> {
@@ -80,90 +118,59 @@ where
     }
 }
 
-impl<'a> Borrowable<'a, &'a str> for String {
+impl<'a> Borrow<'a, &'a str> for String {
     #[inline]
     fn borrow(&'a self) -> &'a str {
         self.as_str()
     }
 }
 
-impl<'a> Borrowable<'a, &'a [u8]> for String {
+impl<'a> Borrow<'a, &'a [u8]> for String {
     #[inline]
     fn borrow(&'a self) -> &'a [u8] {
         self.as_bytes()
     }
 }
 
-impl<'a> Borrowable<'a, &'a Path> for PathBuf {
+impl<'a> Borrow<'a, &'a Path> for PathBuf {
     #[inline]
     fn borrow(&self) -> &Path {
         self.as_path()
     }
 }
 
-impl<'a, T> Borrowable<'a, &'a [T]> for Vec<T> {
+impl<'a, T> Borrow<'a, &'a [T]> for Vec<T> {
     #[inline]
     fn borrow(&self) -> &[T] {
         self.as_slice()
     }
 }
 
-impl<'a> Borrowable<'a, &'a OsStr> for OsString {
+impl<'a> Borrow<'a, &'a OsStr> for OsString {
     #[inline]
     fn borrow(&self) -> &OsStr {
         self.as_os_str()
     }
 }
 
-impl<'a> Borrowable<'a, &'a OsStr> for PathBuf {
+impl<'a> Borrow<'a, &'a OsStr> for PathBuf {
     #[inline]
     fn borrow(&self) -> &OsStr {
         self.as_os_str()
     }
 }
 
-impl<'a> Borrowable<'a, &'a CStr> for CString {
+impl<'a> Borrow<'a, &'a CStr> for CString {
     #[inline]
     fn borrow(&self) -> &CStr {
         self.as_c_str()
     }
 }
 
-/// Conversion from one generalized reference type into another.
-///
-/// This trait is equivalent to [`Borrowable`], but from the starting
-/// point of a given generalized reference instead of from the object
-/// that should be denoted by the resulting value.
-///
-/// The canonical example is the subtyping relationship between
-/// standard Rust references: `&'a T` is convertible to `&'b T` if
-/// `'a` outlives `'b'.
-///
-/// Since we abstract over references, we cannot rely on the automatic
-/// support for subtyping in the compiler anymore and have to make it
-/// explicit using this trait.
-///
-/// The canonical example above translates to the following instance
-/// (which is already implemented in this crate):
-///
-/// ```ignore
-/// impl<'a: 'b, 'b, T: ?Sized> Reborrowable<'b, &'b T> for &'a T {
-///     fn reborrow(self) -> &'b T {
-///         // subtyping works once the compiler statically knows
-///         // these are references:
-///         self
-///     }
-/// }
-/// ```
-pub trait Reborrowable<'a, T: 'a> {
-    /// Convert a generalized reference of type `Self` into a
-    /// generalized reference of type `T`
-    fn reborrow(self) -> T;
-}
-
-impl<'a: 'b, 'b, T: ?Sized> Reborrowable<'b, &'b T> for &'a T {
-    fn reborrow(self) -> &'b T {
-        self
+impl<'a, 'b: 'a, T: ?Sized> Borrow<'a, &'a T> for &'b T {
+    #[inline]
+    fn borrow(&'a self) -> &'a T {
+        *self
     }
 }
 
@@ -172,27 +179,27 @@ mod unix {
     use super::*;
     use std::os::unix::ffi::OsStrExt;
 
-    impl<'a> Borrowable<'a, &'a [u8]> for OsString {
+    impl<'a> Borrow<'a, &'a [u8]> for OsString {
         #[inline]
         fn borrow(&self) -> &[u8] {
             self.as_os_str().as_bytes()
         }
     }
 
-    impl<'a> Borrowable<'a, &'a [u8]> for PathBuf {
+    impl<'a> Borrow<'a, &'a [u8]> for PathBuf {
         #[inline]
         fn borrow(&self) -> &[u8] {
             self.as_os_str().as_bytes()
         }
     }
 
-    impl<'a> Ownable<OsString> for &'a [u8] {
+    impl<'a> Take<OsString> for &'a [u8] {
         fn to_owned(&self) -> OsString {
             OsStr::from_bytes(self).to_os_string()
         }
     }
 
-    impl<'a> Ownable<PathBuf> for &'a [u8] {
+    impl<'a> Take<PathBuf> for &'a [u8] {
         fn to_owned(&self) -> PathBuf {
             PathBuf::from(OsStr::from_bytes(self))
         }
@@ -205,11 +212,11 @@ mod unix {
 /// The obvious instances for [`str`], [`Path`], [`OsStr`], [`CStr`],
 /// slices as well as sized types implementing [`Clone`] are implemented
 /// out of the box.
-pub trait Ownable<O>: Sized {
+pub trait Take<O>: Sized {
     /// Clone the thing denoted by a generalized reference into one that
     /// is owned.
     ///
-    /// This trait function defaults to calling [`to_owned`](Ownable::to_owned)
+    /// This trait function defaults to calling [`to_owned`](Take::to_owned)
     /// but is there as an optimization opportunity, if needed.
     fn own(self) -> O {
         self.to_owned()
@@ -220,67 +227,67 @@ pub trait Ownable<O>: Sized {
     fn to_owned(&self) -> O;
 }
 
-impl<'a> Ownable<String> for &'a str {
+impl<'a> Take<String> for &'a str {
     fn to_owned(&self) -> String {
         self.to_string()
     }
 }
 
-impl<'a> Ownable<PathBuf> for &'a Path {
+impl<'a> Take<PathBuf> for &'a Path {
     fn to_owned(&self) -> PathBuf {
         self.to_path_buf()
     }
 }
 
-impl<'a, T: Clone> Ownable<Vec<T>> for &'a [T] {
+impl<'a, T: Clone> Take<Vec<T>> for &'a [T] {
     fn to_owned(&self) -> Vec<T> {
         self.to_vec()
     }
 }
 
-impl<'a> Ownable<OsString> for &'a OsStr {
+impl<'a> Take<OsString> for &'a OsStr {
     fn to_owned(&self) -> OsString {
         self.to_os_string()
     }
 }
 
-impl<'a> Ownable<PathBuf> for &'a OsStr {
+impl<'a> Take<PathBuf> for &'a OsStr {
     fn to_owned(&self) -> PathBuf {
         PathBuf::from(self)
     }
 }
 
-impl<'a, T: Clone> Ownable<T> for &'a T {
+impl<'a, T: Clone> Take<T> for &'a T {
     fn to_owned(&self) -> T {
         (*self).clone()
     }
 }
 
-impl<'a> Ownable<CString> for &'a CStr {
+impl<'a> Take<CString> for &'a CStr {
     fn to_owned(&self) -> CString {
         (*self).to_owned()
     }
 }
 
-impl<'a, T: Clone> Ownable<Box<T>> for &'a T {
+impl<'a, T: Clone> Take<Box<T>> for &'a T {
     fn to_owned(&self) -> Box<T> {
         Box::new((*self).clone())
     }
 }
 
-impl<'a, T: Clone> Ownable<Rc<T>> for &'a T {
+impl<'a, T: Clone> Take<Rc<T>> for &'a T {
     fn to_owned(&self) -> Rc<T> {
         Rc::new((*self).clone())
     }
 }
 
-impl<'a, T: Clone> Ownable<Arc<T>> for &'a T {
+impl<'a, T: Clone> Take<Arc<T>> for &'a T {
     fn to_owned(&self) -> Arc<T> {
         Arc::new((*self).clone())
     }
 }
 
-impl<'a, R: ToOwned> Ownable<R::Owned> for Cow<'a, R> {
+impl<'a, R: ToOwned> Take<R::Owned> for Cow<'a, R> {
     fn to_owned(&self) -> R::Owned {
         self.clone().into_owned()
     }

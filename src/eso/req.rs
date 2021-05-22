@@ -8,7 +8,7 @@
 //! to keep the `where` clauses short and more readable.
 
 use crate::{
-    borrow::{Borrowable, Ownable, Reborrowable},
+    borrow::{Borrow, Take},
     maybe::Maybe,
 };
 
@@ -16,19 +16,19 @@ use crate::{
 mod r#impl {
     use super::*;
 
-    pub trait MOwnableRef<T>: Maybe {
-        /// Clone the inner reference and forward to [`Ownable::own`]
+    pub trait MTake<T>: Maybe {
+        /// Clone the inner reference and forward to [`Take::own`]
         fn to_owned(&self) -> T
         where
             Self: Clone;
-        /// Forward to [`Ownable::own`]
+        /// Forward to [`Take::own`]
         fn own(self) -> T;
     }
 
-    impl<T, MX> MOwnableRef<T> for MX
+    impl<T, MX> MTake<T> for MX
     where
         MX: Maybe,
-        MX::Inner: Ownable<T>,
+        MX::Inner: Take<T>,
     {
         fn to_owned(&self) -> T
         where
@@ -42,33 +42,18 @@ mod r#impl {
         }
     }
 
-    pub trait MBorrowable<'a, R: 'a>: Maybe {
-        /// Forward to [`Borrowable::borrow`]
+    pub trait MBorrow<'a, R: 'a>: Maybe {
+        /// Forward to [`Borrow::borrow`]
         fn borrow(&'a self) -> R;
     }
 
-    impl<'a, R: 'a, MX> MBorrowable<'a, R> for MX
+    impl<'a, R: 'a, MX> MBorrow<'a, R> for MX
     where
         MX: Maybe,
-        MX::Inner: Borrowable<'a, R>,
+        MX::Inner: Borrow<'a, R>,
     {
         fn borrow(&'a self) -> R {
             self.inner().borrow()
-        }
-    }
-
-    pub trait MReborrowable<'a, R: 'a>: Maybe {
-        /// Forward to [`Reborrowable::reborrow`]
-        fn reborrow(self) -> R;
-    }
-
-    impl<'a, R: 'a, MX> MReborrowable<'a, R> for MX
-    where
-        MX: Maybe,
-        MX::Inner: Reborrowable<'a, R>,
-    {
-        fn reborrow(self) -> R {
-            self.unwrap().reborrow()
         }
     }
 
@@ -88,33 +73,23 @@ mod r#impl {
     }
 }
 
-/// A [`Maybe`] whose inner value  is [`Ownable`]
-pub trait MOwnableRef<T>: r#impl::MOwnableRef<T> {}
+/// A [`Maybe`] whose inner value  is [`Take`]
+pub trait MTake<T>: r#impl::MTake<T> {}
 
-impl<T, MX> MOwnableRef<T> for MX
+impl<T, MX> MTake<T> for MX
 where
     MX: Maybe,
-    MX::Inner: Ownable<T>,
+    MX::Inner: Take<T>,
 {
 }
 
-/// A [`Maybe`] whose inner value is [`Borrowable`]
-pub trait MBorrowable<'a, R: 'a>: r#impl::MBorrowable<'a, R> {}
+/// A [`Maybe`] whose inner value is [`Borrow`]
+pub trait MBorrow<'a, R: 'a>: r#impl::MBorrow<'a, R> {}
 
-impl<'a, R: 'a, MX> MBorrowable<'a, R> for MX
+impl<'a, R: 'a, MX> MBorrow<'a, R> for MX
 where
     MX: Maybe,
-    MX::Inner: Borrowable<'a, R>,
-{
-}
-
-/// A [`Maybe`] whose inner value is [`Reborrowable`]
-pub trait MReborrowable<'a, R: 'a>: r#impl::MReborrowable<'a, R> {}
-
-impl<'a, R: 'a, MX> MReborrowable<'a, R> for MX
-where
-    MX: Maybe,
-    MX::Inner: Reborrowable<'a, R>,
+    MX::Inner: Borrow<'a, R>,
 {
 }
 

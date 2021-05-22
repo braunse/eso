@@ -5,11 +5,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::{
-    eso::req::{MBorrowable, MOwnableRef, MReborrowable},
+    eso::{
+        req::{MBorrow, MTake},
+        Eso,
+    },
     maybe::{An, Maybe},
+    shorthand::x,
 };
-
-use super::*;
 
 /// Methods to transform an [`Eso`] between its different states.
 impl<ME, MS, MO> Eso<ME, MS, MO> {
@@ -17,7 +19,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// reference or an owned value.
     ///
     /// This clones an ephemeral reference into an owned value via
-    /// [`Ownable`](crate::borrow::Ownable)
+    /// [`Take`](crate::borrow::Take)
     /// but will move a shared/static reference or an owned value into the
     /// result unchanged.
     ///
@@ -63,7 +65,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// ```
     pub fn into_static(self) -> x::sO<ME, MS, MO>
     where
-        ME: MOwnableRef<MO::Inner>,
+        ME: MTake<MO::Inner>,
         MO: Maybe,
     {
         match self {
@@ -86,11 +88,11 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     ///     function_consuming_static(my_static);
     ///     my_reference
     /// }
-    /// assert_eq!(my_fn("Hello World").get_ref(), "Hello World");
+    /// assert_eq!(my_fn("Hello World").get_ref::<&str>(), "Hello World");
     /// ```
     ///
     /// The `to_static` method clones an ephemeral reference into an owned value via
-    /// [`Ownable::own`](crate::borrow::Ownable::to_owned)
+    /// [`Take::own`](crate::borrow::Take::to_owned)
     /// but clones a shared/static reference or an owned value into the
     /// result unchanged.
     ///
@@ -98,7 +100,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// lifetime of the result.
     pub fn to_static(&self) -> x::sO<ME, MS, MO>
     where
-        ME: MOwnableRef<MO::Inner> + Clone,
+        ME: MTake<MO::Inner> + Clone,
         MS: Maybe + Clone,
         MO: Maybe + Clone,
     {
@@ -112,7 +114,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// Transform this [`Eso`] into one that is definitely an owned value.
     ///
     /// Any reference will be cloned into an owned form via
-    /// [`Ownable`](crate::borrow::Ownable),
+    /// [`Take`](crate::borrow::Take),
     /// and an owned value will be moved into the result unchanged.
     ///
     /// ```
@@ -124,8 +126,8 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// ```
     pub fn into_owning(self) -> x::O<ME, MS, MO>
     where
-        ME: MOwnableRef<MO::Inner>,
-        MS: MOwnableRef<MO::Inner>,
+        ME: MTake<MO::Inner>,
+        MS: MTake<MO::Inner>,
         MO: Maybe,
     {
         match self {
@@ -138,7 +140,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// Clone this [`Eso`] into one that is definitely an owned value.
     ///
     /// Any reference will be cloned into an owned form via
-    /// [`Ownable`](crate::borrow::Ownable),
+    /// [`Take`](crate::borrow::Take),
     /// and an owned value will be cloned into the result via [`Clone`].
     ///
     /// ```
@@ -151,8 +153,8 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     /// ```
     pub fn to_owning(&self) -> x::O<ME, MS, MO>
     where
-        ME: MOwnableRef<MO::Inner> + Clone,
-        MS: MOwnableRef<MO::Inner> + Clone,
+        ME: MTake<MO::Inner> + Clone,
+        MS: MTake<MO::Inner> + Clone,
         MO: Maybe + Clone,
     {
         match self {
@@ -177,7 +179,7 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     where
         ME: Maybe + Clone,
         MS: Maybe + Clone,
-        MO: MBorrowable<'a, ME::Inner>,
+        MO: MBorrow<'a, ME::Inner>,
     {
         match self {
             Eso::E(e) => Eso::E(An(e.clone().unwrap())),
@@ -188,10 +190,9 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
 
     /// Borrow an ephemeral reference.
     ///
-    /// Clones an already-existing ephemeral reference,
-    /// [reborrows](crate::borrow::Reborrowable::reborrow) a shared/static reference or
-    /// [borrows](crate::borrow::Borrowable) a generalized reference to
-    /// an owned value.
+    /// Clones an already-existing ephemeral reference, and
+    /// [borrows](crate::borrow::Borrow::borrow) from a static reference
+    /// or an owned value.
     ///
     /// ```
     /// # use eso::shorthand::t;
@@ -204,12 +205,12 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
     pub fn ephemeral<'a>(&'a self) -> x::E<ME, MS, MO>
     where
         ME: Maybe + Clone,
-        MS: MReborrowable<'a, ME::Inner> + Clone,
-        MO: MBorrowable<'a, ME::Inner>,
+        MS: MBorrow<'a, ME::Inner>,
+        MO: MBorrow<'a, ME::Inner>,
     {
         match self {
             Eso::E(e) => Eso::E(An(e.clone().unwrap())),
-            Eso::S(s) => Eso::E(An(s.clone().reborrow())),
+            Eso::S(s) => Eso::E(An(s.borrow())),
             Eso::O(o) => Eso::E(An(o.borrow())),
         }
     }

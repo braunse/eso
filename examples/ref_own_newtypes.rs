@@ -7,7 +7,7 @@
 #![allow(dead_code)]
 
 use eso::{
-    borrow::{Borrowable, Ownable},
+    borrow::{Borrow, Take},
     An, Eso, No,
 };
 use std::ops::{Deref, DerefMut};
@@ -34,19 +34,19 @@ impl StaticString {
     }
 }
 
-impl<'a> Borrowable<'a, StringRef<'a>> for OwnedString {
+impl<'a> Borrow<'a, StringRef<'a>> for OwnedString {
     fn borrow(&'a self) -> StringRef<'a> {
         StringRef(self.0.reference())
     }
 }
 
-impl<'a> Borrowable<'a, StringRef<'a>> for StaticString {
+impl<'a> Borrow<'a, StringRef<'a>> for StaticString {
     fn borrow(&'a self) -> StringRef<'a> {
         StringRef(self.0.reference())
     }
 }
 
-impl<'a> Ownable<OwnedString> for StringRef<'a> {
+impl<'a> Take<OwnedString> for StringRef<'a> {
     fn to_owned(&self) -> OwnedString {
         OwnedString(self.0.to_owning().relax())
     }
