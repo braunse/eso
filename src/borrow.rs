@@ -187,13 +187,13 @@ mod unix {
     }
 
     impl<'a> Ownable<OsString> for &'a [u8] {
-        fn own(&self) -> OsString {
+        fn to_owned(&self) -> OsString {
             OsStr::from_bytes(self).to_os_string()
         }
     }
 
     impl<'a> Ownable<PathBuf> for &'a [u8] {
-        fn own(&self) -> PathBuf {
+        fn to_owned(&self) -> PathBuf {
             PathBuf::from(OsStr::from_bytes(self))
         }
     }
@@ -207,72 +207,81 @@ mod unix {
 /// out of the box.
 pub trait Ownable<O>: Sized {
     /// Clone the thing denoted by a generalized reference into one that
-    /// is owned (does not reference another object)
-    fn own(&self) -> O;
+    /// is owned.
+    ///
+    /// This trait function defaults to calling [`to_owned`](Ownable::to_owned)
+    /// but is there as an optimization opportunity, if needed.
+    fn own(self) -> O {
+        self.to_owned()
+    }
+
+    /// Clone the thing denoted by a generalized reference into one that
+    /// is owned without consuming the reference.
+    fn to_owned(&self) -> O;
 }
 
 impl<'a> Ownable<String> for &'a str {
-    fn own(&self) -> String {
+    fn to_owned(&self) -> String {
         self.to_string()
     }
 }
 
 impl<'a> Ownable<PathBuf> for &'a Path {
-    fn own(&self) -> PathBuf {
+    fn to_owned(&self) -> PathBuf {
         self.to_path_buf()
     }
 }
 
 impl<'a, T: Clone> Ownable<Vec<T>> for &'a [T] {
-    fn own(&self) -> Vec<T> {
+    fn to_owned(&self) -> Vec<T> {
         self.to_vec()
     }
 }
 
 impl<'a> Ownable<OsString> for &'a OsStr {
-    fn own(&self) -> OsString {
+    fn to_owned(&self) -> OsString {
         self.to_os_string()
     }
 }
 
 impl<'a> Ownable<PathBuf> for &'a OsStr {
-    fn own(&self) -> PathBuf {
+    fn to_owned(&self) -> PathBuf {
         PathBuf::from(self)
     }
 }
 
 impl<'a, T: Clone> Ownable<T> for &'a T {
-    fn own(&self) -> T {
+    fn to_owned(&self) -> T {
         (*self).clone()
     }
 }
 
 impl<'a> Ownable<CString> for &'a CStr {
-    fn own(&self) -> CString {
+    fn to_owned(&self) -> CString {
         (*self).to_owned()
     }
 }
 
 impl<'a, T: Clone> Ownable<Box<T>> for &'a T {
-    fn own(&self) -> Box<T> {
+    fn to_owned(&self) -> Box<T> {
         Box::new((*self).clone())
     }
 }
 
 impl<'a, T: Clone> Ownable<Rc<T>> for &'a T {
-    fn own(&self) -> Rc<T> {
+    fn to_owned(&self) -> Rc<T> {
         Rc::new((*self).clone())
     }
 }
 
 impl<'a, T: Clone> Ownable<Arc<T>> for &'a T {
-    fn own(&self) -> Arc<T> {
+    fn to_owned(&self) -> Arc<T> {
         Arc::new((*self).clone())
     }
 }
 
 impl<'a, R: ToOwned> Ownable<R::Owned> for Cow<'a, R> {
-    fn own(&self) -> R::Owned {
+    fn to_owned(&self) -> R::Owned {
         self.clone().into_owned()
     }
 }

@@ -83,7 +83,7 @@ impl<'a, 'b: 'a> Borrowable<'a, WrappedString<'a>> for WrappedString<'b> {
 }
 
 impl<'a> Ownable<WrappedString<'static>> for WrappedString<'a> {
-    fn own(&self) -> WrappedString<'static> {
+    fn to_owned(&self) -> WrappedString<'static> {
         WrappedString(self.0.clone().into_owning().relax())
     }
 }
