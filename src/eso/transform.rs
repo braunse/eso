@@ -6,7 +6,7 @@
 
 use crate::{
     eso::{
-        req::{MBorrow, MTake},
+        req::{MBorrow, MIntern, MInternRef, MTake, MTryIntern, MTryInternRef},
         Eso,
     },
     maybe::{An, Maybe},
@@ -212,6 +212,142 @@ impl<ME, MS, MO> Eso<ME, MS, MO> {
             Eso::E(e) => Eso::E(An(e.clone().unwrap())),
             Eso::S(s) => Eso::E(An(s.borrow())),
             Eso::O(o) => Eso::E(An(o.borrow())),
+        }
+    }
+
+    /// Try transforming an ephemeral reference into a shared/static
+    /// reference by [`interning`](crate::borrow::TryInternRef::try_intern_ref).
+    ///
+    /// ```
+    /// # use eso::shorthand::t; use std::rc::Rc;
+    /// type Str<'a> = t::ESO<&'a str, Rc<str>, String>;
+    /// let ephemeral = Str::from_ref("Hello World");
+    /// let shared = ephemeral.try_intern_ephemeral().expect("Should have worked");
+    /// assert!(shared.is_static());
+    /// assert_eq!(shared.get_ref::<&str>(), "Hello World");
+    /// ```
+    pub fn try_intern_ephemeral(self) -> Result<x::S<ME, MS, MO>, x::eo<ME, MS, MO>>
+    where
+        ME: MTryInternRef<MS::Inner>,
+        MS: Maybe,
+        MO: Maybe,
+    {
+        match self {
+            Eso::E(e) => match e.try_intern_ref() {
+                Some(interned) => Ok(Eso::S(An(interned))),
+                None => Err(Eso::E(e)),
+            },
+            Eso::S(s) => Ok(Eso::S(An(s.unwrap()))),
+            Eso::O(o) => Err(Eso::O(o)),
+        }
+    }
+
+    /// Try transforming an ephemeral reference or an owned value into a
+    /// shared/static reference by [`interning`](crate::borrow::TryInternRef::try_intern_ref).
+    ///
+    /// ```
+    /// # use eso::shorthand::t; use std::rc::Rc;
+    /// type Str<'a> = t::ESO<&'a str, Rc<str>, String>;
+    /// let owned = Str::from_owned("Hello World".to_string());
+    /// let shared = owned.try_intern().expect("Should have worked");
+    /// assert!(shared.is_static());
+    /// assert_eq!(shared.get_ref::<&str>(), "Hello World");
+    /// ```
+    pub fn try_intern(self) -> Result<x::S<ME, MS, MO>, x::eo<ME, MS, MO>>
+    where
+        ME: MTryInternRef<MS::Inner>,
+        MS: Maybe,
+        MO: MTryIntern<MS::Inner>,
+    {
+        match self {
+            Eso::E(e) => match e.try_intern_ref() {
+                Some(interned) => Ok(Eso::S(An(interned))),
+                None => Err(Eso::E(e)),
+            },
+            Eso::S(s) => Ok(Eso::S(An(s.unwrap()))),
+            Eso::O(o) => match o.try_intern() {
+                Ok(interned) => Ok(Eso::S(An(interned))),
+                Err(o) => Err(Eso::O(o)),
+            },
+        }
+    }
+
+    /// Try transforming an ephemeral reference or an owned value into a
+    /// shared/static reference by [`interning`](crate::borrow::TryInternRef::try_intern_ref),
+    /// and if this does not work, clone it into an owned value via
+    /// [`Take::own`](crate::borrow::Take::own).
+    ///
+    /// ```
+    /// # use eso::shorthand::t; use std::rc::Rc;
+    /// type Str<'a> = t::ESO<&'a str, Rc<str>, String>;
+    /// let my_ref = Str::from_ref("Hello World");
+    /// let interned = my_ref.intern_or_take();
+    /// assert!(interned.is_static());
+    /// assert_eq!(interned.get_ref::<&str>(), "Hello World");
+    /// // TODO an example for failed interning
+    /// ```
+
+    pub fn intern_or_take(self) -> x::SO<ME, MS, MO>
+    where
+        ME: MTryInternRef<MS::Inner> + MTake<MO::Inner>,
+        MS: Maybe,
+        MO: Maybe,
+    {
+        match self {
+            Eso::E(e) => match e.try_intern_ref() {
+                Some(interned) => Eso::S(An(interned)),
+                None => Eso::O(An(e.own())),
+            },
+            Eso::S(s) => Eso::S(An(s.unwrap())),
+            Eso::O(o) => Eso::O(An(o.unwrap())),
+        }
+    }
+
+    /// Try transforming an ephemeral reference into a shared/static
+    /// reference by [`interning`](crate::borrow::InternRef::intern_ref).
+    ///
+    /// ```
+    /// # use eso::shorthand::t; use std::rc::Rc;
+    /// type Str<'a> = t::ESO<&'a str, Rc<str>, String>;
+    /// let ephemeral = Str::from_ref("Hello World");
+    /// let shared = ephemeral.intern_ephemeral();
+    /// assert!(shared.is_static());
+    /// assert_eq!(shared.get_ref::<&str>(), "Hello World");
+    /// ```
+    pub fn intern_ephemeral(self) -> x::SO<ME, MS, MO>
+    where
+        ME: MInternRef<MS::Inner>,
+        MS: Maybe,
+        MO: Maybe,
+    {
+        match self {
+            Eso::E(e) => Eso::S(An(e.intern_ref())),
+            Eso::S(s) => Eso::S(An(s.unwrap())),
+            Eso::O(o) => Eso::O(An(o.unwrap())),
+        }
+    }
+
+    /// Try transforming an ephemeral reference or an owned value into a
+    /// shared/static reference by [`interning`](crate::borrow::InternRef::intern_ref).
+    ///
+    /// ```
+    /// # use eso::shorthand::t; use std::rc::Rc;
+    /// type Str<'a> = t::ESO<&'a str, Rc<str>, String>;
+    /// let owned = Str::from_owned("Hello World".to_string());
+    /// let shared = owned.intern();
+    /// assert!(shared.is_static());
+    /// assert_eq!(shared.get_ref::<&str>(), "Hello World");
+    /// ```
+    pub fn intern(self) -> x::S<ME, MS, MO>
+    where
+        ME: MInternRef<MS::Inner>,
+        MS: Maybe,
+        MO: MIntern<MS::Inner>,
+    {
+        match self {
+            Eso::E(e) => Eso::S(An(e.intern_ref())),
+            Eso::S(s) => Eso::S(An(s.unwrap())),
+            Eso::O(o) => Eso::S(An(o.intern())),
         }
     }
 }

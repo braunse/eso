@@ -63,6 +63,7 @@
     unused_import_braces,
     unused_qualifications
 )]
+#![warn(rustdoc::broken_intra_doc_links)]
 
 #[cfg_attr(feature = "unstable-doc-cfg", feature(doc_cfg))]
 pub mod borrow;

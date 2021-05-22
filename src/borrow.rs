@@ -27,11 +27,11 @@
 //!
 //! This module defines traits to convert between the categories:
 //!
-//! | From      | To Ephemeral | To Static                                          | To Owned
-//! |-----------|--------------|----------------------------------------------------|----------
-//! | Ephemeral |              | `TryInternRef`, `InternRef`                        | [`Take`]
-//! | Static    | [`Borrow`]   |                                                    | [`Take`]
-//! | Owned     | [`Borrow`]   | `TryInternRef`, `TryIntern`, `InternRef`, `Intern` |
+//! | From      | To Ephemeral | To Static                                                  | To Owned
+//! |-----------|--------------|------------------------------------------------------------|----------
+//! | Ephemeral |              | [`TryInternRef`], [`InternRef`]                            | [`Take`]
+//! | Static    | [`Borrow`]   |                                                            | [`Take`]
+//! | Owned     | [`Borrow`]   | [`TryInternRef`], [`TryIntern`], [`InternRef`], [`Intern`] |
 //!
 //! As can be seen from the table, there is some additional complexity
 //! regarding the interning operation:
@@ -290,5 +290,95 @@ impl<'a, T: Clone> Take<Arc<T>> for &'a T {
 impl<'a, R: ToOwned> Take<R::Owned> for Cow<'a, R> {
     fn to_owned(&self) -> R::Owned {
         self.clone().into_owned()
+    }
+}
+
+macro_rules!forward_trait{
+    (@impl@ $to:ty, $fn:ident ( $($decl:tt)* ) -> $out:ty => $wrap:ident($ftrait:ident::$ffn:ident($($use:tt)*)) ) => {
+        fn $fn( $($decl)* ) -> $out {
+            $wrap(<Self as $ftrait<$to>>::$ffn( $($use)* ))
+        }
+    };
+    (@fn@ TryInternRef $to:ty) => {
+        forward_trait!(@impl@ $to, try_intern_ref(&self) -> Option<$to> => Some(InternRef::intern_ref(self)));
+    };
+    (@fn@ TryIntern $to:ty) => {
+        forward_trait!(@impl@ $to, try_intern(self) -> Result<$to, Self> => Ok(Intern::intern(self)));
+    };
+    (
+        $(<
+            $($g:tt)+
+        >)?
+        $trait:ident,
+        $to:ty,
+        $from:ty
+    ) => {
+        impl $(<$($g)+>)? $trait<$to> for $from {
+            forward_trait!(@fn@ $trait $to);
+        }
+    };
+}
+
+/// A value that can be interned from a reference,
+/// where interning may fail.
+pub trait TryInternRef<T> {
+    /// Look up or create a static reference for the
+    /// value denoted by `self`.
+    /// Return `None` if it is not possible to represent
+    /// the value denoted by `self` as a static reference.
+    fn try_intern_ref(&self) -> Option<T>;
+}
+
+forward_trait!(TryInternRef, Rc<str>, &'_ str);
+forward_trait!(TryInternRef, Arc<str>, &'_ str);
+
+/// A value that can be interned from a reference,
+/// where interning cannot fail.
+pub trait InternRef<T>: TryInternRef<T> {
+    /// Look up or create a static reference for the
+    /// value denoted by `self`.
+    fn intern_ref(&self) -> T;
+}
+
+impl InternRef<Rc<str>> for &'_ str {
+    fn intern_ref(&self) -> Rc<str> {
+        Rc::from(*self)
+    }
+}
+
+impl InternRef<Arc<str>> for &'_ str {
+    fn intern_ref(&self) -> Arc<str> {
+        Arc::from(*self)
+    }
+}
+
+/// A value that can be interned from an owned value,
+/// where interning may fail.
+pub trait TryIntern<T>: Sized {
+    /// Look up or create a static reference to the value of `self`.
+    /// Return `None` if it is not possible to represent
+    /// the value denoted by `self` as a static reference.
+    fn try_intern(self) -> Result<T, Self>;
+}
+
+forward_trait!(TryIntern, Rc<str>, String);
+forward_trait!(TryIntern, Arc<str>, String);
+
+/// A value that can be interned from an owned value,
+/// where interning cannot fail.
+pub trait Intern<T> {
+    /// Look up or create a static reference to the value of `self`.
+    fn intern(self) -> T;
+}
+
+impl Intern<Rc<str>> for String {
+    fn intern(self) -> Rc<str> {
+        Rc::from(self)
+    }
+}
+
+impl Intern<Arc<str>> for String {
+    fn intern(self) -> Arc<str> {
+        Arc::from(self)
     }
 }

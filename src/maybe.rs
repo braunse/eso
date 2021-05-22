@@ -66,12 +66,27 @@ pub trait Maybe: Sized + __SealMaybe {
     /// Recover the inner value from the wrapper.
     fn unwrap(self) -> Self::Inner;
 
+    /// Run a function on the inner value that either succeeds
+    /// or gives back the inner value
+    fn unwrap_try<F, T>(self, f: F) -> Result<T, Self>
+    where
+        F: FnOnce(Self::Inner) -> Result<T, Self::Inner>;
+
+    /// Run a function on the inner value that either succeeds
+    /// or gives back the inner value, plus an error value
+    fn unwrap_try_x<F, T, E>(self, f: F) -> Result<T, (Self, E)>
+    where
+        F: FnOnce(Self::Inner) -> Result<T, (Self::Inner, E)>;
+
     /// Apply a function to the contained value while keeping
     /// the result contained.
     fn map<F, NewInner>(self, f: F) -> <Self as MaybeMap<NewInner>>::Out
     where
         Self: MaybeMap<NewInner>,
-        F: FnOnce(Self::Inner) -> NewInner;
+        F: FnOnce(Self::Inner) -> NewInner,
+    {
+        <Self as MaybeMap<NewInner>>::do_map(self, f)
+    }
 }
 
 /// A type-level function to describe the result
@@ -122,6 +137,26 @@ impl<A> Maybe for An<A> {
 
     fn unwrap(self) -> A {
         self.0
+    }
+
+    fn unwrap_try<F, T>(self, f: F) -> Result<T, Self>
+    where
+        F: FnOnce(Self::Inner) -> Result<T, A>,
+    {
+        match f(self.unwrap()) {
+            Ok(r) => Ok(r),
+            Err(inner) => Err(An(inner)),
+        }
+    }
+
+    fn unwrap_try_x<F, T, E>(self, f: F) -> Result<T, (Self, E)>
+    where
+        F: FnOnce(Self::Inner) -> Result<T, (Self::Inner, E)>,
+    {
+        match f(self.unwrap()) {
+            Ok(r) => Ok(r),
+            Err((inner, e)) => Err((An(inner), e)),
+        }
     }
 
     fn map<F, B>(self, f: F) -> <Self as MaybeMap<B>>::Out
@@ -177,6 +212,20 @@ impl<A> Maybe for No<A> {
     }
 
     fn unwrap(self) -> A {
+        self.absurd()
+    }
+
+    fn unwrap_try<F, T>(self, _f: F) -> Result<T, Self>
+    where
+        F: FnOnce(Self::Inner) -> Result<T, A>,
+    {
+        self.absurd()
+    }
+
+    fn unwrap_try_x<F, T, E>(self, _f: F) -> Result<T, (Self, E)>
+    where
+        F: FnOnce(Self::Inner) -> Result<T, (Self::Inner, E)>,
+    {
         self.absurd()
     }
 
