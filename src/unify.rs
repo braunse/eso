@@ -4,10 +4,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-//! Type-level machinery to allow [`Eso::unify`] and [`Eso::select`]
-//! to work.
+//! Type-level machinery to allow [`Eso::unify`] to work.
 //!
-//! The [`Unify`] trait specifies the rules how two [`Maybe`]
+//! The [`Unify`] trait specifies the rules how two [`Maybe`](crate::maybe::Maybe)
 //! types can be merged:
 //!
 //! | This ...    | ... unifies with ... | ... containing ... | ... producing ... |
