@@ -3,7 +3,7 @@ members = [".", "xtask"]
 
 [package]
 name = "eso"
-version = "0.0.2"
+version = "0.0.3-active.0"
 authors = ["Sebastien Braun <sebastien@sebbraun.de>"]
 repository = "https://github.com/braunse/eso.git"
 homepage = "https://github.com/braunse/eso"
